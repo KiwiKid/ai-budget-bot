@@ -1,0 +1,23 @@
+{% extends "/shared/_base.html" %} {% block content %}
+
+<h1>View completed upload here stuff!!!!!</h1>
+<a href="/tset/{{ts_id}}/upload">back</a>
+
+<table>
+  <tr>
+    {% for head in headers %}
+    <th>{{ head }}</th>
+    {% endfor %}
+  </tr>
+
+  <!-- Now iterate over rows and values -->
+  {% for values_list in rows_as_lists %}
+  <tr>
+    {% for value in values_list %}
+    <td>{{ value }}</td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>
+<a href="/tset/{{ts_id}}/upload">back</a>
+{% endblock %}

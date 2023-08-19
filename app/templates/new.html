@@ -1,0 +1,15 @@
+{% extends "/shared/_base.html" %} {% block content %}
+
+<h1>Run a scan</h1>
+<p>This is just a simple site for you woah</p>
+
+<label for="mapfile">Bank Export file</label>
+<input
+  id="new_area"
+  type="file"
+  name="mapfile"
+  hx-put="cgi-bin/upload.pl/map.png"
+  hx-encoding="multipart/form-data"
+/>
+
+{% endblock %}

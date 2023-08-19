@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.config import Settings
 from app.routes import router
+from fastapi.staticfiles import StaticFiles
 
 settings = Settings()
 
@@ -17,6 +18,7 @@ def get_app() -> FastAPI:
 
 app = get_app()
 
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 if __name__ == "__main__":
     import uvicorn
