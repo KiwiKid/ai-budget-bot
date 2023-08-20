@@ -45,8 +45,6 @@ class OpenAIClient:
         return response.choices[0].message.function_call.arguments
 
     def categorizeTransactions(self, transactions, overrideCategories):
-        print(
-            f"categorizeTransactions(self, transaction:{transactions} overrideCategories:{overrideCategories})")
 
         if not overrideCategories:
             overrideCategories = [

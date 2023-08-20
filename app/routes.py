@@ -35,8 +35,13 @@ def add_subscriber(ts_id, t_id, message):
 
 def event_stream(ts_id, t_id):
     while True:
+        print(
+            f"checking  EVENT {ts_id}  {t_id}) {len(subscribers)} {len(subscribers[ts_id])}")
+
         if ts_id in subscribers and t_id in subscribers[ts_id]:
             while subscribers[ts_id][t_id]:
+                print(f"firing EVENT (self, subscribers:{ts_id}  {t_id})")
+
                 message = subscribers[ts_id][t_id].pop(0)
                 yield f"event: {message['event']}\ndata: {message['data']}\n\n"
         time.sleep(1)
