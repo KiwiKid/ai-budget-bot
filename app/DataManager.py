@@ -1,5 +1,7 @@
 import sqlite3
 
+
+# Set to reset table structure on next db access (remember to turn off again...)
 andDrop = False
 
 
@@ -23,7 +25,8 @@ class DataManager:
                     user_id TEXT NOT NULL,
                     amount_head TEXT NOT NULL,
                     date_head TEXT NOT NULL,
-                    description_head TEXT NOT NULL
+                    description_head TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
 
@@ -41,7 +44,8 @@ class DataManager:
                     description TEXT NOT NULL,
                     amount TEXT NOT NULL,
                     status TEXT NOT NULL,
-                    category TEXT NUL
+                    category TEXT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
 
@@ -69,18 +73,18 @@ class DataManager:
             'SELECT * FROM headers WHERE user_id = ?', (user_id,))
         return cursor.fetchall()
 
-    def get_transactions(self, user_id, ts_id, limit):
+    def get_transactions(self, user_id, ts_id, page, limit):
         """Returns transactions filtered by a given id + user_id."""
         print(f"get_transactions(self, {user_id}, {ts_id})")
         cursor = self.conn.execute(
-            'SELECT * FROM transactions WHERE user_id = ? AND ts_id = ? LIMIT ?', (user_id, ts_id, limit))
+            'SELECT * FROM transactions WHERE user_id = ? AND ts_id = ? LIMIT ? OFFSET ?', (user_id, ts_id, limit, page*limit))
         return cursor.fetchall()
 
-    def get_transactions_to_process(self, user_id, ts_id, limit):
+    def get_transactions_to_process(self, user_id, ts_id, page, limit):
         """Returns transactions filtered by a given id + user_id."""
         print(f"get_transactions(self, {user_id}, {ts_id})")
         cursor = self.conn.execute(
-            'SELECT * FROM transactions WHERE user_id = ? AND ts_id = ? AND status = \'pending\' LIMIT ?', (user_id, ts_id, limit))
+            'SELECT * FROM transactions WHERE user_id = ? AND ts_id = ? AND status = \'pending\' LIMIT ? OFFSET ?', (user_id, ts_id, limit, page*limit))
         return cursor.fetchall()
 
     def set_transaction_category(self, t_id, category):

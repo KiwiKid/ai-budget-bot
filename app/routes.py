@@ -22,14 +22,23 @@ userId = 'bd65600d-8669-4903-8a14-af88203add38'
 aiClient = OpenAIClient(organization="org-79wTeMDwJKLtMWOcnQRg6ozv")
 dbLoc = 'data/data.db'
 
-subscribers = []
+subscribers = {}
 
 
-def event_stream():
+def add_subscriber(ts_id, t_id, message):
+    if ts_id not in subscribers:
+        subscribers[ts_id] = {}
+    if t_id not in subscribers[ts_id]:
+        subscribers[ts_id][t_id] = []
+    subscribers[ts_id][t_id].append(message)
+
+
+def event_stream(ts_id, t_id):
     while True:
-        if subscribers:
-            message = subscribers.pop(0)
-            yield f"data: {message}\n\n"
+        if ts_id in subscribers and t_id in subscribers[ts_id]:
+            while subscribers[ts_id][t_id]:
+                message = subscribers[ts_id][t_id].pop(0)
+                yield f"event: {message['event']}\ndata: {message['data']}\n\n"
         time.sleep(1)
 
 
@@ -53,11 +62,20 @@ def index(request: Request):
     return templates.TemplateResponse("tset/tsets.html", {"request": request, "sets": existingTransactionSet})
 
 
+@router.get('/tset/{ts_id}/tid/{t_id}/events')
+async def sse(ts_id: str, t_id: str):
+    return StreamingResponse(event_stream(ts_id, t_id), media_type="text/event-stream")
+
+
 @router.get("/tset/{ts_id}")
 def index(ts_id: str, request: Request):
     db = DataManager(dbLoc)
-    transactions = db.get_transactions(userId, ts_id, 999)
-    return templates.TemplateResponse("tset/tres.html", {"request": request, "transactions": transactions})
+    page = int(request.query_params.get('page', 0))
+    limit = int(request.query_params.get('limit', 50))
+
+    transactions = db.get_transactions(
+        userId, ts_id, page, limit)
+    return templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit})
 
 
 @router.get("/tset/{ts_id}/upload")
@@ -65,25 +83,26 @@ def index(ts_id: str, request: Request):
     return templates.TemplateResponse("tset/edit_tset.html", {"request": request, "ts_id": ts_id})
 
 
-@router.get('/tset/{ts_id}/categorize/{t_id}')
-async def sse(ts_id: int, t_id: int):
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
-
-
 @router.post('/tset/{ts_id}/categorize')
 def index(ts_id: str, request: Request):
     db = DataManager(dbLoc)
-    transactions = db.get_transactions_to_process(userId, ts_id, 10)
+    page = int(request.query_params.get('page', 0))
+    limit = min(int(request.query_params.get('limit', 20)), 20)
+    transactions = db.get_transactions_to_process(userId, ts_id, page, limit)
+
+    for preT in transactions:
+        add_subscriber(preT[1], preT[0], {
+            'event': 'start_category'
+        })
 
     response = aiClient.categorizeTransactions(transactions, [])
     aiRes = json.loads(response)
 
     for cat in aiRes['categories']:
         db.set_transaction_category(t_id=cat['t_id'], category=cat['category'])
-        subscribers.append({
+        add_subscriber(ts_id, cat['t_id'], {
             'event': 'new_category',
             "data": {
-                "t_id": cat['t_id'],
                 "category": cat['category'],
             }
         })

@@ -1,26 +1,49 @@
 {% extends "/shared/_base.html" %} {% block content %}
 
-<a href="/tset/{{ts_id}}/upload">back</a>
+<div style="position: fixed; right: 0px">
+  <a href="/tset/{{ts_id}}/upload">re-upload</a>
+
+  {% if page > 1 %}
+  <a href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
+    >Previous Page</a
+  >
+  {% endif %} {% if not last_page %}
+  <!-- Assuming you have a boolean variable 'last_page' to indicate the end of the pages -->
+  <a href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
+    >Next Page</a
+  >
+  {% endif %}
+
+  <button hx-post="/tset/{{ts_id}}/categorize" hx-swap="none">
+    CATEGORIZE MORE!
+  </button>
+</div>
 
 <table>
   <tr>
-    <th>date</th>
-    <th>details</th>
+    <th>Date</th>
+    <th>Description</th>
+    <th>Amount</th>
+    <th>Category</th>
   </tr>
-
   <!-- Now iterate over rows and values -->
-  {% for transactions in transactions %}
+  {% for transaction in transactions %}
   <tr>
-    <td>{{ transactions[0] }}</td>
-    <td>{{ transactions[1] }}</td>
-    <td>{{ transactions[2] }}</td>
-    <td>{{ transactions[3] }}</td>
-    <td>{{ transactions[4] }}</td>
-    <td>{{ transactions[5] }}</td>
-    <td>{{ transactions[6] }}</td>
-    <td>{{ transactions[7] }}</td>
-    <td>{{ transactions[8] }}</td>
-    {% endfor %}
+    <td>{{ transaction[3] }}</td>
+    <td>{{ transaction[4] }}</td>
+    <td>{{ transaction[5] }}</td>
+    {% if transaction[7] %}
+    <td>1{{ transaction[7] }}</td>
+    {% else %}
+    <td>
+      <div
+        hx-sse="connect:/tset/{{ transaction[1]}}/tid/{{transaction[0]}}/events"
+      >
+        <div hx-sse="swap:new_category">[new_cat]</div>
+        <div hx-sse="swap:start_category">[start_cat]</div>
+      </div>
+    </td>
+    {% endif %} {% endfor %}
   </tr>
 </table>
 

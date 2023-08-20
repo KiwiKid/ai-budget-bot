@@ -4,7 +4,7 @@
 
 header_set: {{ header_set }} is_existing {{ is_existing }}
 
-<button hx-post="/tset/{{ts_id}}/categorize" hx-swap="outerHTML this" hx->
+<button hx-post="/tset/{{ts_id}}/categorize" hx-swap="outerHTML this">
   CATEGORIZE!
 </button>
 <table>
@@ -28,13 +28,6 @@ header_set: {{ header_set }} is_existing {{ is_existing }}
     {% for value in values_list %}
     <td>{{ value }}</td>
     {% endfor %}
-    <td>
-      <div
-        hx-ext="sse"
-        sse-connect="/tset/{{ts_id}}/categorize/{{values_list['t_id']}}"
-        sse-swap="innerHTML:new_category"
-      ></div>
-    </td>
   </tr>
   {% endfor %}
 </table>
