@@ -73,7 +73,7 @@ async def sse(ts_id: int, t_id: int):
 @router.post('/tset/{ts_id}/categorize')
 def index(ts_id: str, request: Request):
     db = DataManager(dbLoc)
-    transactions = db.get_transactions_to_process(userId, ts_id, limit)
+    transactions = db.get_transactions_to_process(userId, ts_id, 10)
 
     response = aiClient.categorizeTransactions(transactions, [])
     aiRes = json.loads(response)

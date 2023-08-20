@@ -4,7 +4,9 @@
 
 header_set: {{ header_set }} is_existing {{ is_existing }}
 
-<button hx-post="/tset/{{ts_id}}/categorize" hx-swap="this">CATEGORIZE!</button>
+<button hx-post="/tset/{{ts_id}}/categorize" hx-swap="outerHTML this" hx->
+  CATEGORIZE!
+</button>
 <table>
   <tr>
     {% for head in headers %} {% if head == header_set.amount %}
