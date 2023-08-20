@@ -1,19 +1,22 @@
 {% extends "/shared/_base.html" %} {% block content %}
 
-<h1>This is the first (and only) step to get your report</h1>
-
-<div>
-  Export a copy of your transactions from your bank and upload here to begin
-</div>
-
 <div>
   <i>tip: be sure to 'include headers' when exporting for best results</i>
 </div>
 
 <div hx-target="this" hx-swap="outerHTML">
   <button hx-get="/tset/{{ ts_id }}/upload" class="btn btn-primary">
-    Lets Go
+    New upload
   </button>
 </div>
 
+<h3>Existing Uploads</h3>
+<div>
+  {% for set in sets %}
+  <div>
+    <a href="/tset/{{ set[0] }}">{{set[0]}} Transactions: {{set[1]}}</a>
+  </div>
+
+  {% endfor %}
+</div>
 {% endblock %}

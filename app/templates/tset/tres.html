@@ -1,50 +1,64 @@
 {% extends "/shared/_base.html" %} {% block content %}
 
-<div style="position: fixed; right: 0px">
-  <a href="/tset/{{ts_id}}/upload">re-upload</a>
+<div id="mainContent">
+  <div style="position: fixed; right:10%; top: 300px">
 
-  {% if page > 1 %}
-  <a href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
-    >Previous Page</a
-  >
-  {% endif %} {% if not last_page %}
-  <!-- Assuming you have a boolean variable 'last_page' to indicate the end of the pages -->
-  <a href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
-    >Next Page</a
-  >
-  {% endif %}
+    <h1>Page: {{page + 1}}</h1>
+    <h3>Limit: {{limit}}</h3>
+    <div>
+      <a href="/tset/{{ts_id}}/upload">re-upload</a>
+      <a href="/tset">View All Batches</a>
+    </div>
+    <div>
 
-  <button hx-post="/tset/{{ts_id}}/categorize" hx-swap="none">
-    CATEGORIZE MORE!
-  </button>
-</div>
-
-<table>
-  <tr>
-    <th>Date</th>
-    <th>Description</th>
-    <th>Amount</th>
-    <th>Category</th>
-  </tr>
-  <!-- Now iterate over rows and values -->
-  {% for transaction in transactions %}
-  <tr>
-    <td>{{ transaction[3] }}</td>
-    <td>{{ transaction[4] }}</td>
-    <td>{{ transaction[5] }}</td>
-    {% if transaction[7] %}
-    <td>1{{ transaction[7] }}</td>
-    {% else %}
-    <td>
-      <div
-        hx-sse="connect:/tset/{{ transaction[1]}}/tid/{{transaction[0]}}/events"
+      {% if page > 1 %}
+      <a href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
+        > &lt; &lt; &lt; &lt; Previous Page</a
       >
-        <div hx-sse="swap:new_category">[new_cat]</div>
-        <div hx-sse="swap:start_category">[start_cat]</div>
-      </div>
-    </td>
-    {% endif %} {% endfor %}
-  </tr>
-</table>
+      {% endif %} {% if not last_page %}
+      <!-- Assuming you have a boolean variable 'last_page' to indicate the end of the pages -->
+      <a href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
+        >Next Page &gt; &gt; &gt; &gt;</a
+      >
+      {% endif %} {% if done %} ALL COMPLETE {% else %}
+      
+  </div>
 
-{{ response }} {% endblock %}
+    {% endif %}
+  </div>
+  HERE:
+
+  <div>
+  <div style="height: 300px" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart"></div>
+</div>
+    <table>
+      <tr>
+        <th>Date</th>
+        <th>Description</th>
+        <th>Amount</th>
+        <th>Category</th>
+      </tr>
+      <!-- Now iterate over rows and values -->
+      {% for transaction in transactions %}
+      <tr>
+        <td>{{ transaction[3] }}</td>
+        <td>{{ transaction[4] }}</td>
+        <td>{{ transaction[5] }}</td>
+        {% if transaction[7] %}
+        <td>{{ transaction[7] }}</td>
+        {% else %}
+        <td>
+          <button
+            hx-post="/tset/{{ts_id}}/categorize"
+            hx-swap="innerHTML"
+            hx-target="#mainContent"
+          >
+            CATEGORIZE MORE 2!
+          </button>
+        </td>
+        {% endif %} {% endfor %}
+      </tr>
+    </table>
+  </div>
+  {{ response }} {% endblock %}
+</div>

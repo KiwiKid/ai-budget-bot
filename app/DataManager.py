@@ -100,10 +100,10 @@ class DataManager:
             'SELECT * FROM transactions WHERE user_id = ? AND id = ?', (user_id, id))
         return cursor.fetchall()
 
-    def get_transactions_by_session(self, user_id):
+    def get_transaction_sets_by_session(self, user_id):
         """Returns transactions filtered by a given user_id."""
         cursor = self.conn.execute(
-            'SELECT * FROM transactions WHERE user_id = ?', (user_id,))
+            'SELECT ts_id, COUNT(*) FROM transactions WHERE user_id = ? GROUP BY ts_id', (user_id,))
         return cursor.fetchall()
 
     def close(self):
