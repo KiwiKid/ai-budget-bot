@@ -1,12 +1,19 @@
 {% extends "/shared/_base.html" %} {% block content %}
 
-<h1>View Transaction a scan</h1>
+<h1>This is the first (and only) step to get your report</h1>
+
+<div>
+  Export a copy of your transactions from your bank and upload here to begin
+</div>
+
+<div>
+  <i>tip: be sure to 'include headers' when exporting for best results</i>
+</div>
 
 <div hx-target="this" hx-swap="outerHTML">
-  <div><label>First Name</label>: Joe</div>
-  <div><label>Last Name</label>: Blow</div>
-  <div><label>Email</label>: joe@blow.com</div>
-  <button hx-get="/tset/1/upload" class="btn btn-primary">Click To Edit</button>
+  <button hx-get="/tset/{{ ts_id }}/upload" class="btn btn-primary">
+    Lets Go
+  </button>
 </div>
 
 {% endblock %}

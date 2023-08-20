@@ -1,0 +1,27 @@
+{% extends "/shared/_base.html" %} {% block content %}
+
+<a href="/tset/{{ts_id}}/upload">back</a>
+
+<table>
+  <tr>
+    <th>date</th>
+    <th>details</th>
+  </tr>
+
+  <!-- Now iterate over rows and values -->
+  {% for transactions in transactions %}
+  <tr>
+    <td>{{ transactions[0] }}</td>
+    <td>{{ transactions[1] }}</td>
+    <td>{{ transactions[2] }}</td>
+    <td>{{ transactions[3] }}</td>
+    <td>{{ transactions[4] }}</td>
+    <td>{{ transactions[5] }}</td>
+    <td>{{ transactions[6] }}</td>
+    <td>{{ transactions[7] }}</td>
+    <td>{{ transactions[8] }}</td>
+    {% endfor %}
+  </tr>
+</table>
+
+{{ response }} {% endblock %}

@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     STATIC_DIR: Path = APP_DIR / 'static'
     TEMPLATE_DIR: Path = APP_DIR / 'templates'
 
+    DATA_DIR: Path = APP_DIR.parent / 'data'
+
     FASTAPI_PROPERTIES: dict[str, Any] = {
         "title": "Simple Site",
         "description": "A simple htmx and tailwind site built with FastAPI",
@@ -43,7 +45,3 @@ class Settings(BaseSettings):
                 }
             )
         return fastapi_kwargs
-
-
-
-
