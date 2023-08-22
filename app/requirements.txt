@@ -7,3 +7,7 @@ pytailwindcss
 tinydb
 uvicorn
 pandas
+openai
+sqlalchemy
+simplejson
+psycopg2

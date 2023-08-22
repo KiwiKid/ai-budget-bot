@@ -4,7 +4,7 @@ import os
 import simplejson as json
 from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse, Response
-from app.utils import read_file, aggregate_transactions, CustomJSONEncoder
+from app.utils import read_file, CustomJSONEncoder
 from fastapi import APIRouter, Request, UploadFile
 from jinja2_fragments.fastapi import Jinja2Blocks
 from jinja2 import Environment, FileSystemLoader
@@ -185,6 +185,7 @@ def chart_view_hx(ts_id: str, request: Request):
     transactions = db.get_transactions(
         user_id=userId, ts_id=ts_id, page=page, limit=limit, negative_only=True)
 
+    mode = 3
     if mode == 1:
         # Step 1: Create a dictionary to aggregate the amounts by category.
         #    category_amounts = {}
@@ -200,105 +201,105 @@ def chart_view_hx(ts_id: str, request: Request):
         #        else:
         #            category_amounts[category] = amount
         #
-        aggregated = aggregate_transactions(transactions, groupBy)
-        categories = aggregated['category'].drop_duplicates().tolist()
-        x_axis_dates = aggregated['date'].drop_duplicates().tolist()
-# Create a dictionary to store the series data
-        series_data = []
+        #        aggregated = aggregate_transactions(transactions, groupBy)
+        #        categories = aggregated['category'].drop_duplicates().tolist()
+        #        x_axis_dates = aggregated['date'].drop_duplicates().tolist()
+        #        # Create a dictionary to store the series data
+        #        series_data = []
 
-        # Loop through each unique category and format its data
-        for category in categories:
-            category_data = {
-                'name': category,
-                'type': 'line',  # You can change the chart type if needed
-                'data': aggregated[aggregated['category'] == category]['amount'].tolist()
-            }
-            series_data.append(category_data)
+        #        # Loop through each unique category and format its data
+        #        for category in categories:
+        #            category_data = {
+        #                'name': category,
+        #                'type': 'line',  # You can change the chart type if needed
+        #                'data': aggregated[aggregated['category'] == category]['amount'].tolist()
+        #            }
+        #            series_data.append(category_data)
 
-        # Final data structure for ECharts
-        # echarts_formatted_data = {
-        #    'x_axis': x_axis_dates,
-        #    'series': series_data
-        # }
+        #        # Final data structure for ECharts
+        #        # echarts_formatted_data = {
+        #        #    'x_axis': x_axis_dates,
+        #        #    'series': series_data
+        #        # }
 
-        echarts_data = {
-            "title": {
-                "text": "Category Chart"
-            },
-            "tooltip": {},
-            "legend": {
-                "data": ["Transactions"]
-            },
-            "xAxis": {
-                "data": x_axis_dates
-            },
-            "yAxis": {},
-            "series": [{
-                "name": "Sales",
-                "type": "line ",
-                "data": series_data,
-            }]
-        }
+        #        echarts_data = {
+        #            "title": {
+        #                "text": "Category Chart"
+        #            },
+        #            "tooltip": {},
+        #            "legend": {
+        #                "data": ["Transactions"]
+        #            },
+        #            "xAxis": {
+        #                "data": x_axis_dates
+        #            },
+        #            "yAxis": {},
+        #            "series": [{
+        #                "name": "Sales",
+        #                "type": "line ",
+        #                "data": series_data,
+        #            }]
+        #        }
 
-        return Response(status_code=200, content=json.dumps(echarts_data, cls=CustomJSONEncoder), media_type="application/json")
+        #        return Response(status_code=200, content=json.dumps(echarts_data, cls=CustomJSONEncoder), media_type="application/json")
 
-    elif mode == 2:
-        # Collecting unique dates and categories
-        aggregated = aggregate_transactions(transactions, groupBy)
-        raw_categories = list(aggregated['category'])
-        categories = list(dict.fromkeys(raw_categories))
-        # For simplicity, we'll just extract dates from one category (assuming all categories have the same date keys)
-        dates = [np.datetime_as_string(date, unit='D')
-                 for date in sorted(aggregated['date'].values)]
-        # This constructs a dictionary where each category corresponds to a list of amounts over the sorted dates
-        # series_data = {category: [aggregated[category].get(date, 0) for date in dates] for category in categories}
+        #    elif mode == 2:
+        #        # Collecting unique dates and categories
+        #        aggregated = aggregate_transactions(transactions, groupBy)
+        #        raw_categories = list(aggregated['category'])
+        #        categories = list(dict.fromkeys(raw_categories))
+        #        # For simplicity, we'll just extract dates from one category (assuming all categories have the same date keys)
+        #        dates = [np.datetime_as_string(date, unit='D')
+        #                 for date in sorted(aggregated['date'].values)]
+        #        # This constructs a dictionary where each category corresponds to a list of amounts over the sorted dates
+        #        # series_data = {category: [aggregated[category].get(date, 0) for date in dates] for category in categories}
 
-        series = [{
-            "name": category,
-            "type": "line",
-            "stack": "Total",
-            "label": {"position": "outside"},
-            "areaStyle": {},
-            "data": data.tolist(),
-            "emphasis": {
-                "focus": 'series'
-            },
-        } for category, data in aggregated.items()]
+        #        series = [{
+        #            "name": category,
+        #            "type": "line",
+        #            "stack": "Total",
+        #            "label": {"position": "outside"},
+        #            "areaStyle": {},
+        #            "data": data.tolist(),
+        #            "emphasis": {
+        #                "focus": 'series'
+        #            },
+        #        } for category, data in aggregated.items()]
 
-        echarts_data = {
-            "title": {
-                "text": "Weekly Category Chart"
-            },
-            "tooltip": {
-                "trigger": 'axis',
-                "axisPointer": {
-                    "type": 'cross',
-                    "label": {
-                        "backgroundColor": "#6a7985"
-                    }
-                }
-            },
-            "legend": {
-                "data": categories
-            },
-            "xAxis": {
-                "data": dates
-            },
-            "yAxis": {
-                "type": "value"
-            },
-            "series": series
-        }
+        #        echarts_data = {
+        #            "title": {
+        #                "text": "Weekly Category Chart"
+        #            },
+        #            "tooltip": {
+        #                "trigger": 'axis',
+        #                "axisPointer": {
+        #                    "type": 'cross',
+        #                    "label": {
+        #                        "backgroundColor": "#6a7985"
+        #                    }
+        #                }
+        #            },
+        #            "legend": {
+        #                "data": categories
+        #            },
+        #            "xAxis": {
+        #                "data": dates
+        #            },
+        #            "yAxis": {
+        #                "type": "value"
+        #            },
+        #            "series": series
+        #        }
 
-        return Response(status_code=200, content=json.dumps(echarts_data), media_type="application/json")
-
+        #        return Response(status_code=200, content=json.dumps(echarts_data), media_type="application/json")
+        print(f"nah not doing it")
     else:
         return Response(status_code=400, content="No mode", media_type="application/text")
-    # optional
-    # if using the django_htmx library you can attach any clientside
-    # events here . For example
+#    # optional
+#    # if using the django_htmx library you can attach any clientside
+#    # events here . For example
 
-    # trigger_client_ev
+#    # trigger_client_ev
 
 
 @router.post("/tset/{ts_id}/upload")

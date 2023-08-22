@@ -6,9 +6,9 @@ services:
       context: "./data"
       dockerfile: Dockerfile
     environment:
-      POSTGRES_PASSWORD: secret
-      POSTGRES_USER: username
-      POSTGRES_DB: database
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
 
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -19,6 +19,11 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
+    environment:
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_NAME: ${POSTGRES_DB}
+      DATABASE_HOST: data
     volumes:
       - ./app:/app
     ports:
