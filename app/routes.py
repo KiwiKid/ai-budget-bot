@@ -1,8 +1,10 @@
-import json
-import os
 import time
+import os
+
+import simplejson as json
+from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse, Response
-from app.utils import read_file
+from app.utils import read_file, aggregate_transactions, CustomJSONEncoder
 from fastapi import APIRouter, Request, UploadFile
 from jinja2_fragments.fastapi import Jinja2Blocks
 from jinja2 import Environment, FileSystemLoader
@@ -16,6 +18,8 @@ from typing import List
 from app.config import Settings
 from app.transaction import TransactionsList, RawTransactionRow
 import signal
+import uuid
+from collections import defaultdict
 
 templates = Jinja2Blocks(directory="app/templates")
 router = APIRouter()
@@ -31,7 +35,7 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done):
     db = DataManager(dbLoc)
 
     transactions = db.get_transactions(
-        user_id, ts_id, page, limit)
+        user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False)
     return templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit, "message": message, "done": done})
 
 
@@ -92,17 +96,30 @@ def index(request: Request):
     db = DataManager(dbLoc)
     existingTransactionSet = db.get_transaction_sets_by_session(
         userId)
-    return templates.TemplateResponse("tset/tsets.html", {"request": request, "sets": existingTransactionSet})
+    return templates.TemplateResponse("tset/tsets.html", {"request": request, "sets": existingTransactionSet, "new_ts_id": str(uuid.uuid4())})
 
 
 @router.get("/tset/{ts_id}")
 def index(ts_id: str, request: Request):
-    db = DataManager(dbLoc)
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
 
     return present_transactions(
         request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message='', done=False)
+
+
+@router.delete("/tset/{ts_id}/category")
+def index(ts_id: str, request: Request):
+    db = DataManager(dbLoc)
+    db.reset_transaction_set(ts_id=ts_id)
+    return Response(status_code=200, media_type="application/json")
+
+
+@router.delete("/tset/{ts_id}/t_id/{t_id}/category")
+def index(ts_id: str, t_id: str, request: Request):
+    db = DataManager(dbLoc)
+    res = db.reset_transaction(t_id=t_id)
+    return Response(status_code=200, content={"deleted": 1, "t_id": res}, media_type="application/json")
 
 
 @router.get("/tset/{ts_id}/upload")
@@ -151,38 +168,132 @@ def index(ts_id: str, request: Request):
 
 
 @router.get("/tset/{ts_id}/chart")
-def chart_view_hx(request: Request):
+def chart_view_hx(ts_id: str, request: Request):
     """Returns chart options for echarts"""
 
-   # 3 period = request.GET.get("period", "week")
-   # 3 chart_id = request.GET.get("chart_id")
-   # 3 chart_type = request.GET.get("chart_type")
+    page = int(request.query_params.get('page', 0))
+    limit = int(request.query_params.get('limit', 999))
+    mode = int(request.query_params.get('mode', 1))
+    groupBy = request.query_params.get('groupBy', 'week')
+
 # 3
    # 3 days_in_period = {
    # 3     "week": 7,
    # 3     "month": 30,
    # 3 }
-    echarts_data = {
-        "title": {
-            "text": "ECharts Sample Data"
-        },
-        "tooltip": {},
-        "legend": {
-            "data": ["Sales"]
-        },
-        "xAxis": {
-            "data": ["shirt", "cardign", "chiffon shirt", "pants", "heels", "socks"]
-        },
-        "yAxis": {},
-        "series": [{
-            "name": "Sales",
-            "type": "bar",
-            "data": [5, 20, 36, 10, 10, 20]
-        }]
-    }
+    db = DataManager(dbLoc)
+    transactions = db.get_transactions(
+        user_id=userId, ts_id=ts_id, page=page, limit=limit, negative_only=True)
 
-    return Response(status_code=200, content=json.dumps(echarts_data), media_type="application/json")
+    if mode == 1:
+        # Step 1: Create a dictionary to aggregate the amounts by category.
+        #    category_amounts = {}
+        #
+        #    # Step 2: Iterate through the transactions.
+        #    for transaction in transactions:
+        #        print(f"transaction: {transaction}")
+        #        category = transaction[7]
+        #        amount = float(transaction[5]) * -1  # Assuming amount is stored as a string. Convert to float for calculations.
+        #
+        #        if category in category_amounts:
+        #            category_amounts[category] += amount
+        #        else:
+        #            category_amounts[category] = amount
+        #
+        aggregated = aggregate_transactions(transactions, groupBy)
+        categories = aggregated['category'].drop_duplicates().tolist()
+        x_axis_dates = aggregated['date'].drop_duplicates().tolist()
+# Create a dictionary to store the series data
+        series_data = []
 
+        # Loop through each unique category and format its data
+        for category in categories:
+            category_data = {
+                'name': category,
+                'type': 'line',  # You can change the chart type if needed
+                'data': aggregated[aggregated['category'] == category]['amount'].tolist()
+            }
+            series_data.append(category_data)
+
+        # Final data structure for ECharts
+        # echarts_formatted_data = {
+        #    'x_axis': x_axis_dates,
+        #    'series': series_data
+        # }
+
+        echarts_data = {
+            "title": {
+                "text": "Category Chart"
+            },
+            "tooltip": {},
+            "legend": {
+                "data": ["Transactions"]
+            },
+            "xAxis": {
+                "data": x_axis_dates
+            },
+            "yAxis": {},
+            "series": [{
+                "name": "Sales",
+                "type": "line ",
+                "data": series_data,
+            }]
+        }
+
+        return Response(status_code=200, content=json.dumps(echarts_data, cls=CustomJSONEncoder), media_type="application/json")
+
+    elif mode == 2:
+        # Collecting unique dates and categories
+        aggregated = aggregate_transactions(transactions, groupBy)
+        raw_categories = list(aggregated['category'])
+        categories = list(dict.fromkeys(raw_categories))
+        # For simplicity, we'll just extract dates from one category (assuming all categories have the same date keys)
+        dates = [np.datetime_as_string(date, unit='D')
+                 for date in sorted(aggregated['date'].values)]
+        # This constructs a dictionary where each category corresponds to a list of amounts over the sorted dates
+        # series_data = {category: [aggregated[category].get(date, 0) for date in dates] for category in categories}
+
+        series = [{
+            "name": category,
+            "type": "line",
+            "stack": "Total",
+            "label": {"position": "outside"},
+            "areaStyle": {},
+            "data": data.tolist(),
+            "emphasis": {
+                "focus": 'series'
+            },
+        } for category, data in aggregated.items()]
+
+        echarts_data = {
+            "title": {
+                "text": "Weekly Category Chart"
+            },
+            "tooltip": {
+                "trigger": 'axis',
+                "axisPointer": {
+                    "type": 'cross',
+                    "label": {
+                        "backgroundColor": "#6a7985"
+                    }
+                }
+            },
+            "legend": {
+                "data": categories
+            },
+            "xAxis": {
+                "data": dates
+            },
+            "yAxis": {
+                "type": "value"
+            },
+            "series": series
+        }
+
+        return Response(status_code=200, content=json.dumps(echarts_data), media_type="application/json")
+
+    else:
+        return Response(status_code=400, content="No mode", media_type="application/text")
     # optional
     # if using the django_htmx library you can attach any clientside
     # events here . For example

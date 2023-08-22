@@ -49,12 +49,13 @@ class OpenAIClient:
         if not overrideCategories:
             overrideCategories = [
                 'Housing',
-                'Food',
+                'Groceries',
+                'Eating Out',
                 'Transportation',
                 'Healthcare',
                 'Entertainment',
                 'Apparel',
-                'Savings',
+                'Income',
                 'Debts'
             ]
 

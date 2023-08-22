@@ -4,12 +4,21 @@ import sqlite3
 # Set to reset table structure on next db access (remember to turn off again...)
 andDrop = False
 
+db_name = 'database'
+db_user = 'username'
+db_pass = 'secret'
+db_host = 'db'
+db_port = '5432'
+
+# Connecto to the database
+db_string = 'postgresql://{}:{}@{}:{}/{}'.format(
+    db_user, db_pass, db_host, db_port, db_name)
+
 
 class DataManager:
     def __init__(self, db_path):
         """Initializes the DataManager with a database file path."""
-        self.conn = sqlite3.connect(db_path)
-        self.create_tables()
+        self.db = create_engine(db_string)
 
     def create_tables(self):
         """Create tables if they don't exist."""
@@ -73,12 +82,18 @@ class DataManager:
             'SELECT * FROM headers WHERE user_id = ?', (user_id,))
         return cursor.fetchall()
 
-    def get_transactions(self, user_id, ts_id, page, limit):
-        """Returns transactions filtered by a given id + user_id."""
-        print(f"get_transactions(self, {user_id}, {ts_id})")
-        cursor = self.conn.execute(
-            'SELECT * FROM transactions WHERE user_id = ? AND ts_id = ? LIMIT ? OFFSET ?', (user_id, ts_id, limit, page*limit))
-        return cursor.fetchall()
+    def get_transactions(self, user_id, ts_id, page, limit, negative_only: bool):
+
+        if negative_only:
+            cursor = self.conn.execute(
+                'SELECT * FROM transactions WHERE user_id = ? AND ts_id = ? AND amount < 0 LIMIT ? OFFSET ?', (user_id, ts_id, limit, page*limit))
+            return cursor.fetchall()
+            # Retrieve only positive transactions
+        else:
+            # Retrieve all transactions
+            cursor = self.conn.execute(
+                'SELECT * FROM transactions WHERE user_id = ? AND ts_id = ? LIMIT ? OFFSET ?', (user_id, ts_id, limit, page*limit))
+            return cursor.fetchall()
 
     def get_transactions_to_process(self, user_id, ts_id, page, limit):
         """Returns transactions filtered by a given id + user_id."""
@@ -94,16 +109,30 @@ class DataManager:
                     category, 'complete', t_id))
             return cursor.lastrowid
 
+    def reset_transaction(self, t_id):
+        """Returns transactions filtered by a given id + user_id."""
+        cursor = self.conn.execute(
+            'UPDATE transactions SET status = \'pending\', category = NULL WHERE t_id = ?', (t_id,))
+        self.conn.commit()
+        return cursor.lastrowid
+
+    def reset_transaction_set(self, ts_id):
+        """Returns transactions filtered by a given id + user_id."""
+        cursor = self.conn.execute(
+            "UPDATE transactions SET status = 'pending', category = NULL WHERE ts_id = ?", (ts_id,))
+        self.conn.commit()
+        return cursor.rowcount
+
     def get_transaction(self, user_id, id):
         """Returns transactions filtered by a given id + user_id."""
         cursor = self.conn.execute(
             'SELECT * FROM transactions WHERE user_id = ? AND id = ?', (user_id, id))
         return cursor.fetchall()
 
-    def get_transaction_sets_by_session(self, user_id):
+    def get_transaction_sets_by_session(self, user_id, ts_id):
         """Returns transactions filtered by a given user_id."""
         cursor = self.conn.execute(
-            'SELECT ts_id, COUNT(*) FROM transactions WHERE user_id = ? GROUP BY ts_id', (user_id,))
+            'SELECT ts_id, COUNT(*) FROM transactions WHERE user_id = ? GROUP BY ts_id', (user_id, ts_id))
         return cursor.fetchall()
 
     def close(self):
