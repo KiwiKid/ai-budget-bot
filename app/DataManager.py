@@ -4,8 +4,6 @@ from datetime import datetime
 from dateutil.parser import parse
 
 # Set to reset table structure on next db access (remember to turn off again...)
-andDrop = False
-
 user = os.getenv('POSTGRES_USER')
 password = os.getenv('POSTGRES_PASSWORD')
 db_name = os.getenv('POSTGRES_DB')

@@ -367,8 +367,9 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
         save_res = db.save_transaction(t_id=t_id, ts_id=ts_id, user_id=userId, amount=amount,
                                        date=date, description=description, status='pending')
 
-        saved = db.get_transaction(t_id=t_id, user_id=userId)
+        saved = db.get_transaction_sets_by_session(user_id=userId)
 
+        print(f"{len(saved)}")
         save_count = save_res
         print(save_res)
 
