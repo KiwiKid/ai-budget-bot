@@ -1,21 +1,26 @@
+CREATE EXTENSION pgcrypto;
+
+CREATE TYPE transaction_status AS ENUM ('pending', 'complete');
+
 CREATE TABLE IF NOT EXISTS transactions (
-    t_id TEXT NOT NULL,
-    ts_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    date TEXT NOT NULL,
+    t_id UUID NOT NULL,
+    ts_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    date TIMESTAMP NOT NULL,
     description TEXT NOT NULL,
-    amount TEXT NOT NULL,
-    status TEXT NOT NULL,
+    amount decimal NOT NULL,
+    status transaction_status NOT NULL,
     category TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
 CREATE TABLE IF NOT EXISTS headers (
-    ts_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
+    ts_id UUID NOT NULL,
+    user_id UUID NOT NULL,
     amount_head TEXT NOT NULL,
     date_head TEXT NOT NULL,
     description_head TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    customRules TEXT NULL
 );

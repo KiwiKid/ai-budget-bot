@@ -11,3 +11,5 @@ openai
 sqlalchemy
 simplejson
 psycopg2
+python-dotenv
+python-dateutil

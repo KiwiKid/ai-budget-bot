@@ -1,43 +1,55 @@
 from sqlalchemy import create_engine, text
 import os
+from datetime import datetime
+from dateutil.parser import parse
 
 # Set to reset table structure on next db access (remember to turn off again...)
 andDrop = False
 
-user = os.getenv('DATABASE_USER')
-password = os.getenv('DATABASE_PASSWORD')
-db_name = os.getenv('DATABASE_NAME')
-host = os.getenv('DATABASE_HOST')
+user = os.getenv('POSTGRES_USER')
+password = os.getenv('POSTGRES_PASSWORD')
+db_name = os.getenv('POSTGRES_DB')
+host = os.getenv('POSTGRES_HOST')
+debug = os.getenv('DEBUG')
 db_port = '5432'
+
 
 # Connecto to the database
 db_string = 'postgresql://{}:{}@{}:{}/{}'.format(
     user, password, host, db_port, db_name)
 
+if debug:
+    print(f"{db_string} {host}")
+
 
 class DataManager:
-    def __init__(self, db_path):
+    def __init__(self):
         """Initializes the DataManager with a database file path."""
         self.engine = create_engine(db_string)
         self.conn = self.engine.connect()
 
     def save_header(self, header):
         """Saves a header to the headers table."""
-        query = text('''
-            INSERT INTO headers (ts_id, user_id, amount_head, date_head, description_head) 
-            VALUES (:ts_id, :user_id, :amount_head, :date_head, :description_head)
-        ''')
-        result = self.conn.execute(query,
-                                   {
-                                       'ts_id': header['ts_id'],
-                                       'user_id': header['user_id'],
-                                       'amount_head': header['amount_head'],
-                                       'date_head': header['date_head'],
-                                       'description_head': "|".join(
-                                           header['description_head'])
-                                   }
-                                   )
-        return result.lastrowid
+        try:
+            query = text('''
+                INSERT INTO headers (ts_id, user_id, amount_head, date_head, description_head) 
+                VALUES (:ts_id, :user_id, :amount_head, :date_head, :description_head)
+            ''')
+            result = self.conn.execute(query,
+                                       {
+                                           'ts_id': header['ts_id'],
+                                           'user_id': header['user_id'],
+                                           'amount_head': header['amount_head'],
+                                           'date_head': header['date_head'],
+                                           'description_head': "|".join(
+                                               header['description_head'])
+                                       }
+                                       )
+
+        except Exception as e:
+            print(f"Error: {e}")
+
+        return result.rowcount
 
     def save_transaction(self, t_id: str, ts_id: str, user_id: str, amount: str, date: str, description: str, status: str):
         """Saves a transaction to the transactions table."""
@@ -49,17 +61,26 @@ class DataManager:
                 VALUES (:t_id, :ts_id, :user_id, :amount, :date, :description, :status)
             ''')
 
+        try:
+            datetime_object = parse(date)
+            formatted_datetime = datetime_object.strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            raise ValueError(f"Could not parse the date string: {date}")
+
         result = self.conn.execute(query,
                                    {
                                        't_id': t_id,
                                        'ts_id': ts_id,
                                        'user_id': user_id,
                                        'amount': amount,
-                                       'date': date,
+                                       'date': formatted_datetime,
                                        'description': description,
                                        'status': status
                                    })
-        return result.lastrowid
+        if result.rowcount != 1:
+            raise RuntimeError("Could not save transaction")
+
+        return result
 
     def get_header_by_session(self, user_id):
         """Returns headers filtered by a given userId."""
@@ -87,7 +108,9 @@ class DataManager:
             result = self.conn.execute(
                 query, {'user_id': user_id, 'ts_id': ts_id, 'limit': limit, 'offset': offset})
 
-        return result.fetchall()
+        res = result.fetchall()
+
+        return res
 
     def get_transactions_to_process(self, user_id, ts_id, page, limit):
         """Returns transactions filtered by a given id + user_id."""

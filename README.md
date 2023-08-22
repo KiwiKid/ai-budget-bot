@@ -1,14 +1,23 @@
 ```
 
 # Run locally
-uvicorn app.main:app --reload
 
+source .venv/bin/activate
 python3 -m pip install -r app/requirements.txt
+
+
+uvicorn main:app --reload
+
+
 
 
 # Run in docker:
 
 docker-compose up ai-bot data --build
+
+
+# Reset DB:
+docker volume rm ai-budget-bot_pgdata
 ```
 
 <h1 align="center">Simple Site</h1>

@@ -13,7 +13,7 @@ import io
 from app.open_ai_client import OpenAIClient
 from app.DataManager import DataManager
 import uuid
-from app.enumerate_filter import enumerate_filter
+
 from typing import List
 from app.config import Settings
 from app.transaction import TransactionsList, RawTransactionRow
@@ -25,14 +25,13 @@ templates = Jinja2Blocks(directory="app/templates")
 router = APIRouter()
 userId = 'bd65600d-8669-4903-8a14-af88203add38'
 aiClient = OpenAIClient(organization="org-79wTeMDwJKLtMWOcnQRg6ozv")
-dbLoc = 'data/data.db'
 
 subscribers = {}
 runEventLoop = True
 
 
 def present_transactions(user_id, request, ts_id, page, limit, message, done):
-    db = DataManager(dbLoc)
+    db = DataManager()
 
     transactions = db.get_transactions(
         user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False)
@@ -86,14 +85,14 @@ def index(request: Request):
 
 @router.get("/tset/{ts_id}/status/{t_id}")
 def index(ts_id: str, t_id: str, request: Request):
-    db = DataManager(dbLoc)
+    db = DataManager()
     record = db.get_transaction(userId, t_id)
     return templates.TemplateResponse("tset/edit_tset.html", {"request": request, "ts_id": ts_id, })
 
 
 @router.get("/tset")
 def index(request: Request):
-    db = DataManager(dbLoc)
+    db = DataManager()
     existingTransactionSet = db.get_transaction_sets_by_session(
         userId)
     return templates.TemplateResponse("tset/tsets.html", {"request": request, "sets": existingTransactionSet, "new_ts_id": str(uuid.uuid4())})
@@ -110,14 +109,14 @@ def index(ts_id: str, request: Request):
 
 @router.delete("/tset/{ts_id}/category")
 def index(ts_id: str, request: Request):
-    db = DataManager(dbLoc)
+    db = DataManager()
     db.reset_transaction_set(ts_id=ts_id)
     return Response(status_code=200, media_type="application/json")
 
 
 @router.delete("/tset/{ts_id}/t_id/{t_id}/category")
 def index(ts_id: str, t_id: str, request: Request):
-    db = DataManager(dbLoc)
+    db = DataManager()
     res = db.reset_transaction(t_id=t_id)
     return Response(status_code=200, content={"deleted": 1, "t_id": res}, media_type="application/json")
 
@@ -129,7 +128,7 @@ def index(ts_id: str, request: Request):
 
 @router.post('/tset/{ts_id}/categorize')
 def index(ts_id: str, request: Request):
-    db = DataManager(dbLoc)
+    db = DataManager()
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
     aiBatchLimit = min(int(request.query_params.get('limit', 20)), 20)
@@ -181,7 +180,7 @@ def chart_view_hx(ts_id: str, request: Request):
    # 3     "week": 7,
    # 3     "month": 30,
    # 3 }
-    db = DataManager(dbLoc)
+    db = DataManager()
     transactions = db.get_transactions(
         user_id=userId, ts_id=ts_id, page=page, limit=limit, negative_only=True)
 
@@ -313,7 +312,7 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
 
     headers = list(rows[0].keys()) if rows else []
 
-    db = DataManager(dbLoc)
+    db = DataManager()
     existingHeaders = db.get_header_by_session(userId)
     isExisting = True
 
@@ -343,7 +342,9 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
             "date_head": headersRes.get("date"),
             "description_head": headersRes.get("description"),
         }
-        db.save_header(record)
+        res = db.save_header(record)
+        if res == 0:
+            raise 'Could not save header'
         existingHeaders = db.get_header_by_session(user_id=userId)
 
     for row in rows:
@@ -355,13 +356,18 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
         description_parts = [str(row[header])
                              for header in headers if header in row]
 
-        removals = ['nan ', 'Df ']
-        for rem in removals:
-            description: str = ' '.join(
-                description_parts).replace(rem, ' ').strip()
+        removals = ['nan', 'Df']
+        for idx, part in enumerate(description_parts):
+            for rem in removals:
+                part = part.replace(rem, ' ')
+            description_parts[idx] = part.strip()
+
+        description = ' '.join(description_parts).strip()
 
         save_res = db.save_transaction(t_id=t_id, ts_id=ts_id, user_id=userId, amount=amount,
                                        date=date, description=description, status='pending')
+
+        saved = db.get_transaction(t_id=t_id, user_id=userId)
 
         save_count = save_res
         print(save_res)

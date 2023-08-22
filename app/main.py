@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.config import Settings
 from app.routes import router
 from fastapi.staticfiles import StaticFiles
+from app.utils import load_dotenv_safe
 
 settings = Settings()
 
@@ -15,6 +16,9 @@ def get_app() -> FastAPI:
     app.include_router(router)
 
     return app
+
+
+load_dotenv_safe()
 
 
 app = get_app()

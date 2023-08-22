@@ -1,9 +1,11 @@
+import os
 from fastapi import UploadFile
 from typing import List
 from app.DataManager import DataManager
 from pandas import DataFrame, Grouper, to_timedelta, to_datetime
 import json
 import pandas as pd
+from dotenv import load_dotenv, find_dotenv
 
 
 async def read_file(file: UploadFile) -> List[str]:
@@ -12,6 +14,7 @@ async def read_file(file: UploadFile) -> List[str]:
     return rows
 
 dbLoc = 'data/data.db'
+debug = os.getenv('DEBUG')
 
 
 # def aggregate_transactions(transactions, breakdown="day"):
@@ -30,6 +33,27 @@ dbLoc = 'data/data.db'
 #     else:  # default is day
 #         grouped = df.groupby(['date', 'category']).sum().reset_index()#3333333333333
 #     return grouped
+
+
+def load_dotenv_safe():
+    # Load the .env file
+    load_dotenv(find_dotenv())
+
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    env_example_path = os.path.join(current_directory, '.env.example')
+    print("load_dotenv_safe path: ")
+    print(os.getcwd())
+
+    # Load the .env.example file to get a list of required keys
+    with open(env_example_path, 'r') as f:
+        required_keys = [line.split('=')[0] for line in f if line.strip()]
+
+    # Check each required key
+    for key in required_keys:
+        if key not in os.environ:
+            raise EnvironmentError(f"Environment variable {key} not set")
+        elif debug:
+            print(f"{key} found in env")
 
 
 class CustomJSONEncoder(json.JSONEncoder):
