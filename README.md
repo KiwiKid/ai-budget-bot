@@ -1,8 +1,14 @@
 ```
+
+# Run locally
 uvicorn app.main:app --reload
 
+python3 -m pip install -r app/requirements.txt
 
-python3 -m pip install -r requirements.txt
+
+# Run in docker:
+
+docker-compose up ai-bot data --build
 ```
 
 <h1 align="center">Simple Site</h1>

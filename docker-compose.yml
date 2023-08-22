@@ -23,6 +23,7 @@ services:
       DATABASE_USER: ${POSTGRES_USER}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       DATABASE_NAME: ${POSTGRES_DB}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       DATABASE_HOST: data
     volumes:
       - ./app:/app
