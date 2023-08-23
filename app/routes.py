@@ -132,7 +132,7 @@ def index(ts_id: str, request: Request):
 
 
 @router.post('/tset/{ts_id}/categorize')
-def index(ts_id: str, request: Request):
+async def index(ts_id: str, request: Request):
     db = DataManager()
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
@@ -149,7 +149,9 @@ def index(ts_id: str, request: Request):
        #     'event': 'start_category'
        # })
 
-    response = aiClient.categorizeTransactions(transactions, [])
+    print(f"categorize transactions {len(transactions)}")
+    response = await aiClient.categorizeTransactions(transactions, [])
+    print(f"categorized transactions - Got: {len(aiRes['categories'])}")
     aiRes = json.loads(response)
     processed = 0
 
