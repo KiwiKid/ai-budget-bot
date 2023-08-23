@@ -15,6 +15,15 @@ uvicorn main:app --reload
 
 docker-compose up ai-bot data --build
 
+# Run tests:
+
+pytest
+
+
+# Get sql cli:
+
+docker exec -it ai-budget-bot-data-1 psql -U myuser -W mydatabase
+
 
 # Reset DB:
 docker volume rm ai-budget-bot_pgdata

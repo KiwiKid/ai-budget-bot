@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, text
 import os
 from datetime import datetime
 from dateutil.parser import parse
-
+import uuid
 # Set to reset table structure on next db access (remember to turn off again...)
 user = os.getenv('POSTGRES_USER')
 password = os.getenv('POSTGRES_PASSWORD')
@@ -47,38 +47,49 @@ class DataManager:
         except Exception as e:
             print(f"Error: {e}")
 
+        self.conn.commit()
+
         return result.rowcount
 
     def save_transaction(self, t_id: str, ts_id: str, user_id: str, amount: str, date: str, description: str, status: str):
         """Saves a transaction to the transactions table."""
         print(
-            f"save_transaction(self, status:{status} t_id:{t_id}, ts_id:{ts_id} user_id:{user_id} amount:{amount} date:{date} description:{description})")
+            f"save_transaction(self, status:{status} t_id:{t_id}, ts_id:{ts_id} user_id:{user_id} amount:{amount} date:{date} description:{description})"
+        )
 
         query = text('''
                 INSERT INTO transactions (t_id, ts_id, user_id, amount, date, description, status) 
                 VALUES (:t_id, :ts_id, :user_id, :amount, :date, :description, :status)
+                RETURNING *
             ''')
 
         try:
             datetime_object = parse(date)
             formatted_datetime = datetime_object.strftime("%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            raise ValueError(f"Could not parse the date string: {date}")
+        except ValueError as ve:
+            raise ValueError(
+                f"Could not parse the date string: {date}. Error: {ve}")
 
-        result = self.conn.execute(query,
-                                   {
-                                       't_id': t_id,
-                                       'ts_id': ts_id,
-                                       'user_id': user_id,
-                                       'amount': amount,
-                                       'date': formatted_datetime,
-                                       'description': description,
-                                       'status': status
-                                   })
-        if result.rowcount != 1:
-            raise RuntimeError("Could not save transaction")
+        try:
+            result = self.conn.execute(query,
+                                       {
+                                           't_id': t_id,
+                                           'ts_id': ts_id,
+                                           'user_id': user_id,
+                                           'amount': amount,
+                                           'date': formatted_datetime,
+                                           'description': description,
+                                           'status': status
+                                       })
 
-        return result
+            if result.rowcount != 1:
+                raise RuntimeError("Could not save transaction")
+
+            self.conn.commit()
+
+            return result
+        except Exception as e:  # Catching a generic exception to log the actual error message
+            raise ValueError(f"could not save record. Error: {e}")
 
     def get_header_by_session(self, user_id):
         """Returns headers filtered by a given userId."""
@@ -86,7 +97,7 @@ class DataManager:
         result = self.conn.execute(query, {'user_id': user_id})
         return result.fetchall()
 
-    def get_transactions(self, user_id, ts_id, page, limit, negative_only: bool):
+    def get_transactions(self, user_id: uuid, ts_id: uuid, page: int, limit: int, negative_only: bool):
         offset = page * limit
 
         if negative_only:
@@ -102,9 +113,9 @@ class DataManager:
                 SELECT * FROM transactions 
                 WHERE user_id = :user_id AND ts_id = :ts_id 
                 LIMIT :limit OFFSET :offset
-            ''')
+            ''')  #
             result = self.conn.execute(
-                query, {'user_id': user_id, 'ts_id': ts_id, 'limit': limit, 'offset': offset})
+                query, {'ts_id': ts_id, 'limit': limit, 'offset': offset, 'user_id': user_id, })
 
         res = result.fetchall()
 
@@ -153,7 +164,7 @@ class DataManager:
             SET status = 'pending', category = NULL 
             WHERE ts_id = :ts_id
         ''')
-        result = self.conn.execute(query, ts_id=ts_id)
+        result = self.conn.execute(query, {'ts_id': ts_id})
         return result.rowcount
 
     def get_transaction(self, user_id, t_id):

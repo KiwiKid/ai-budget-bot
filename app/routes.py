@@ -35,6 +35,9 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done):
 
     transactions = db.get_transactions(
         user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False)
+
+    print(
+        f"present_transactions - returning saved transaction: {len(transactions)} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
     return templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit, "message": message, "done": done})
 
 
@@ -78,9 +81,9 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done):
 #
 
 
-@router.get("/")
-def index(request: Request):
-    return templates.TemplateResponse("main.html", {"request": request})
+# @router.get("/")
+# def index(request: Request):
+#    return templates.TemplateResponse("main.html", {"request": request})
 
 
 @router.get("/tset/{ts_id}/status/{t_id}")
@@ -90,7 +93,7 @@ def index(ts_id: str, t_id: str, request: Request):
     return templates.TemplateResponse("tset/edit_tset.html", {"request": request, "ts_id": ts_id, })
 
 
-@router.get("/tset")
+@router.get("/")
 def index(request: Request):
     db = DataManager()
     existingTransactionSet = db.get_transaction_sets_by_session(
@@ -100,9 +103,11 @@ def index(request: Request):
 
 @router.get("/tset/{ts_id}")
 def index(ts_id: str, request: Request):
-    page = int(request.query_params.get('page', 0))
+
+    page = int(request.query_params.get('page', 1))
     limit = int(request.query_params.get('limit', 50))
 
+    print(f"GET /tset/{ts_id}")
     return present_transactions(
         request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message='', done=False)
 
@@ -317,6 +322,7 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
     isExisting = True
 
     if not existingHeaders:
+        print(f"no existing headers, calling openai")
         isExisting = False
         csv = df.to_csv(index=False)
         first_10_lines = "\n".join(csv.split("\n")[:10])
@@ -329,7 +335,7 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
         print(gpt_message)
 
         response = aiClient.getImportantHeaders(gpt_message)
-
+        print(f"finished calling openai")
         # raw_upload = df.to_html(classes='my-table-class', border=0)
 
         # df['Amount'] = df['Amount'].astype(float)
@@ -342,10 +348,14 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
             "date_head": headersRes.get("date"),
             "description_head": headersRes.get("description"),
         }
+        print(f"saving headers..")
         res = db.save_header(record)
         if res == 0:
+            print(f"Could not save header")
             raise 'Could not save header'
+        print(f"headers saved")
         existingHeaders = db.get_header_by_session(user_id=userId)
+        print(f"retrieved existingHeaders: {len(existingHeaders)}")
 
     for row in rows:
         t_id = str(uuid.uuid4())
@@ -364,34 +374,34 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
 
         description = ' '.join(description_parts).strip()
 
-        save_res = db.save_transaction(t_id=t_id, ts_id=ts_id, user_id=userId, amount=amount,
-                                       date=date, description=description, status='pending')
+        print(f"saving transaction")
+        trans = db.save_transaction(t_id=t_id, ts_id=ts_id, user_id=userId, amount=float(amount),
+                                    date=date, description=description, status='pending')
+        print(f"saved transaction {trans.returns_rows}")
 
-        saved = db.get_transaction_sets_by_session(user_id=userId)
+    doubleCheckSave = db.get_transaction_sets_by_session(userId)
 
-        print(f"{len(saved)}")
-        save_count = save_res
-        print(save_res)
+    print(f"saved transaction sets {doubleCheckSave[0].count}")
 
     # Process rows (make HTTP requests)
 
-     # results = await process_rows(rows_as_lists)
+    # results = await process_rows(rows_as_lists)
 
-     #
-    # transactions = db.get_transactions(user_id=userId, ts_id=ts_id, limit=999)
+    # TRY/TEMP use present transactions
 
+    return present_transactions(userId, request, ts_id=ts_id, page=0, limit=100, message='', done=False)
     # Return the HTMX template response
     return templates.TemplateResponse("tset/tset.html", {
         "request": request,
         "rows": rows,
         "rows_as_lists": rows_as_lists,
-        #   "transactions": transactions,
+        "transactions": transactions,
         "headers": headers,
         #   "raw_upload": raw_upload,
         "ts_id": ts_id,
         "header_set": existingHeaders,
         "is_existing": isExisting,
-        "save_count": save_count
+        "save_count": len(rows)
     })
 
 

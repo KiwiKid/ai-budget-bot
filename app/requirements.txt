@@ -13,3 +13,4 @@ simplejson
 psycopg2
 python-dotenv
 python-dateutil
+beautifulsoup4
