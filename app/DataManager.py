@@ -145,6 +145,7 @@ class DataManager:
         result = self.conn.execute(
             query, {'category': category,  't_id': t_id})
 
+        self.conn.commit()
         return result.lastrowid
 
     def reset_transaction(self, t_id):
@@ -155,6 +156,9 @@ class DataManager:
             WHERE t_id = :t_id
         ''')
         result = self.conn.execute(query, {'t_id': t_id})
+
+        self.conn.commit()
+
         return result.lastrowid
 
     def reset_transaction_set(self, ts_id):
@@ -165,6 +169,7 @@ class DataManager:
             WHERE ts_id = :ts_id
         ''')
         result = self.conn.execute(query, {'ts_id': ts_id})
+        self.conn.commit()
         return result.rowcount
 
     def get_transaction(self, user_id, t_id):
