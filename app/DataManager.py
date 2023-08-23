@@ -123,7 +123,7 @@ class DataManager:
 
     def get_transactions_to_process(self, user_id, ts_id, page, limit):
         """Returns transactions filtered by a given id + user_id."""
-        print(f"get_transactions(self, {user_id}, {ts_id})")
+        print(f"get_transactions_to_process(self, {user_id}, {ts_id})")
 
         offset = page * limit
         query = text('''
@@ -133,6 +133,9 @@ class DataManager:
         ''')
         result = self.conn.execute(
             query, {'user_id': user_id, 'ts_id': ts_id, 'limit': limit, 'offset': offset})
+
+        print(
+            f"get_transactions_to_process - Got {result.rowcount} to process for ts_id :{ts_id}")
 
         return result.fetchall()
 
@@ -191,6 +194,15 @@ class DataManager:
         ''')
         result = self.conn.execute(query, {'user_id': user_id})
         return result.fetchall()
+
+    def delete_transaction_set(self, ts_id):
+        query = text('''
+            DELETE
+            FROM transactions 
+            WHERE ts_id = :ts_id
+        ''')
+        result = self.conn.execute(query, {'ts_id': ts_id})
+        return result.rowcount
 
     def close(self):
         """Close the database connection."""

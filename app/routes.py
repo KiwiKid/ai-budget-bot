@@ -24,7 +24,7 @@ from collections import defaultdict
 templates = Jinja2Blocks(directory="app/templates")
 router = APIRouter()
 userId = 'bd65600d-8669-4903-8a14-af88203add38'
-aiClient = OpenAIClient(organization="org-79wTeMDwJKLtMWOcnQRg6ozv")
+aiClient = OpenAIClient()
 
 subscribers = {}
 runEventLoop = True
@@ -37,7 +37,7 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done):
         user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False)
 
     print(
-        f"present_transactions - returning saved transaction: {len(transactions)} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
+        f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
     return templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit, "message": message, "done": done})
 
 
@@ -132,7 +132,7 @@ def index(ts_id: str, request: Request):
 
 
 @router.post('/tset/{ts_id}/categorize')
-async def index(ts_id: str, request: Request):
+def index(ts_id: str, request: Request):
     db = DataManager()
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
@@ -150,13 +150,14 @@ async def index(ts_id: str, request: Request):
        # })
 
     print(f"categorize transactions {len(transactions)}")
-    response = await aiClient.categorizeTransactions(transactions, [])
-    print(f"categorized transactions - Got: {len(aiRes['categories'])}")
-    aiRes = json.loads(response)
+    response = aiClient.categorizeTransactions(transactions, [])
+    print(f"categorized transactions - Got: {len(response['categories'])}")
     processed = 0
 
-    for cat in aiRes['categories']:
+    for cat in response['categories']:
         db.set_transaction_category(t_id=cat['t_id'], category=cat['category'])
+        print(
+            f"set_transaction_category(t_id={cat['t_id']}, category={cat['category']})")
        # add_subscriber(ts_id, cat['t_id'], {
        #     'event': 'new_category',
        #     "data": {

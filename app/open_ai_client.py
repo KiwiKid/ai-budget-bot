@@ -1,11 +1,12 @@
 import openai
 import os
 from typing import Optional
+import json
 
 
 class OpenAIClient:
-    def __init__(self, organization: str):
-        openai.organization = organization
+    def __init__(self):
+        openai.organization = "org-79wTeMDwJKLtMWOcnQRg6ozv"
         openai.api_key = os.getenv("OPENAI_API_KEY")
 
     def getImportantHeaders(self, messages):
@@ -45,6 +46,7 @@ class OpenAIClient:
         return response.choices[0].message.function_call.arguments
 
     def categorizeTransactions(self, transactions, overrideCategories):
+        print(f"categorizeTransactions({len(transactions)})")
 
         if not overrideCategories:
             overrideCategories = [
@@ -68,12 +70,16 @@ class OpenAIClient:
             amount = data[5]
             extracted_data.append(f"{t_id}, {description}, {date}, {amount}")
 
+        content = "\n".join(extracted_data)
+
+        print(f"openai.ChatCompletion({content})")
+
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-0613",
             temperature=0,
             messages=[{
                 "role": 'user',
-                "content": "\n".join(extracted_data),
+                "content": content,
             }],
             functions=[
                 {
@@ -108,4 +114,8 @@ class OpenAIClient:
             max_tokens=1024
         )
 
-        return response.choices[0].message.function_call.arguments
+        result = json.loads(
+            response.choices[0].message.function_call.arguments)
+        print(f"openai.ChatCompletion({result})")
+
+        return result
