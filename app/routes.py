@@ -1,6 +1,5 @@
 import time
 import os
-
 import simplejson as json
 from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse, Response
@@ -14,7 +13,7 @@ from app.open_ai_client import OpenAIClient
 from app.DataManager import DataManager
 import uuid
 
-from typing import List
+from typing import List, Optional
 from app.config import Settings
 from app.transaction import TransactionsList, RawTransactionRow
 import signal
@@ -46,6 +45,21 @@ def present_headers(user_id, request, ts_id, message):
     db = DataManager()
     headers = db.get_header(user_id=user_id, ts_id=ts_id)
 
+    if not headers[0][6]:
+        overrideCategories = [
+            'Housing',
+            'Groceries',
+            'Eating Out',
+            'Transportation',
+            'Healthcare',
+            'Entertainment',
+            'Apparel',
+            'Income',
+            'Debts'
+        ]
+    else:
+        overrideCategories = headers[0][6]
+
     return templates.TemplateResponse("edit_header.html", {
         "message": message,
         'request': request,
@@ -54,7 +68,7 @@ def present_headers(user_id, request, ts_id, message):
         'date_head': headers[0][3],
         'description_head': headers[0][4],
         'custom_rules': headers[0][5],
-        'custom_categories': headers[0][6]
+        'custom_categories': json.dumps(overrideCategories, indent=4)
     })
 
 # def add_subscriber(ts_id, t_id, message):
@@ -132,7 +146,7 @@ def index(ts_id: str, request: Request):
 def index(ts_id: str, request: Request):
     db = DataManager()
     db.reset_transaction_set(ts_id=ts_id)
-    return Response(status_code=200, media_type="application/json")
+    return Response(status_code=200, media_type="application/json", request=request)
 
 
 @router.delete("/tset/{ts_id}/t_id/{t_id}/category")
@@ -167,9 +181,10 @@ def index(ts_id: str, request: Request):
 
     headers = db.get_header(user_id=userId, ts_id=ts_id)
 
-    print(f"categorize transactions {len(transactions)}")
+    print(
+        f"categorize transactions {len(transactions)} with overrideCategories {headers[0][6]} and rules: {headers[0][7]}")
     response = aiClient.categorizeTransactions(
-        transactions, overrideCategories=headers[0][7])
+        transactions, overrideCategories=headers[0][6], custom_rules=headers[0][7])
     print(f"categorized transactions - Got: {len(response['categories'])}")
     processed = 0
 
@@ -343,14 +358,26 @@ async def update_headers(
     amount: str = Form(...),
     date: str = Form(...),
     description: str = Form(...),
+    custom_rules: Optional[str] = Form(None),
+    custom_categories: Optional[str] = Form(None)
 ):
+    try:
+        custom_categories = json.loads(custom_categories)
+        if isinstance(custom_categories, bytes):
+            custom_categories = custom_categories.decode('utf-8')
+    except json.JSONDecodeError:
+        # Handle the error as you see fit (logging, returning an error response, etc.)
+        return present_headers(user_id=userId, request=request, ts_id=ts_id, message="Invalid JSON format for custom_categories")
 
     db = DataManager()
     record = {
         "ts_id": ts_id,
         "amount_head": amount,
+        'user_id': userId,
         "date_head": date,
         "description_head": description,
+        'custom_rules': custom_rules,
+        'custom_categories': custom_categories
     }
 
     # Assuming db.save_header returns a response indicating success
@@ -403,9 +430,11 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
             "amount_head": headersRes.get("amount"),
             "date_head": headersRes.get("date"),
             "description_head": headersRes.get("description"),
+            'custom_rules': '',
+            'custom_categories': ''
         }
         print(f"saving headers..")
-        res = db.save_header(record)
+        res = await db.save_header(record)
         if res == 0:
             print(f"Could not save header")
             raise 'Could not save header'

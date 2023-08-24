@@ -31,7 +31,7 @@ class DataManager:
         try:
             query = text('''
                 INSERT INTO headers (ts_id, user_id, amount_head, date_head, description_head, custom_rules, custom_categories) 
-                VALUES (:ts_id, :user_id, :amount_head, :date_head, :description_head)
+                VALUES (:ts_id, :user_id, :amount_head, :date_head, :description_head, :custom_rules, :custom_categories)
                 RETURNING *
             ''')
             result = self.conn.execute(query,
@@ -43,16 +43,15 @@ class DataManager:
                                            'description_head': "|".join(
                                                header['description_head']),
                                            'custom_rules': header['custom_rules'],
-                                           'custom_categories': header['custom_categories']
+                                           'custom_categories': "|".join(header['custom_categories'])
                                        }
                                        )
+            print(f"saving header")
+            self.conn.commit()
+            return result.rowcount
 
         except Exception as e:
-            print(f"Error: {e}")
-
-        self.conn.commit()
-
-        return result.rowcount
+            print(f"Error save_header: {e}")
 
     def save_transaction(self, t_id: str, ts_id: str, user_id: str, amount: str, date: str, description: str, status: str):
         """Saves a transaction to the transactions table."""
@@ -206,6 +205,8 @@ class DataManager:
             WHERE ts_id = :ts_id
         ''')
         result = self.conn.execute(query, {'ts_id': ts_id})
+        self.conn.commit()
+
         return result.rowcount
 
     def close(self):

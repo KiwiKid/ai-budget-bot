@@ -45,21 +45,8 @@ class OpenAIClient:
 
         return response.choices[0].message.function_call.arguments
 
-    def categorizeTransactions(self, transactions, overrideCategories):
+    def categorizeTransactions(self, transactions, overrideCategories, custom_rules):
         print(f"categorizeTransactions({len(transactions)})")
-
-        if not overrideCategories:
-            overrideCategories = [
-                'Housing',
-                'Groceries',
-                'Eating Out',
-                'Transportation',
-                'Healthcare',
-                'Entertainment',
-                'Apparel',
-                'Income',
-                'Debts'
-            ]
 
         extracted_data = []
 
@@ -84,7 +71,7 @@ class OpenAIClient:
             functions=[
                 {
                     "name": "categories_headers",
-                    "description": "You job is to categorize a given transaction based on the following categories:" + "\n".join(overrideCategories),
+                    "description": "You job is to categorize a given transaction based on the following categories:" + "\n".join(overrideCategories) + f"\nconsider these rules: {custom_rules}",
                     "parameters": {
                         "type": 'object',
                         "properties": {

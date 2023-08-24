@@ -1,6 +1,6 @@
 <form
   id="update-form"
-  hx-post="/api/tset/{{ts_id}}/headers"
+  hx-put="/api/tset/{{ts_id}}/headers"
   enctype="multipart/form-data"
 >
   <h2>{{ message }}</h2>
@@ -32,14 +32,28 @@
   /><br />
 
   <label for="custom_rules">Custom Rules:</label>
-  <textarea type="text" name="custom_rules" value="{{custom_rules}}"></textarea>
+  <textarea name="custom_rules"></textarea>
 
-  <label for="custom_rules">Override Categories:</label>
+  <label for="custom_categories">Custom Categories:</label>
+  <script>
+    function adjustHeight(textarea) {
+      console.log("adjustHeight");
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    }
+
+    // Run on page load
+    window.onload = function () {
+      adjustHeight(document.getElementById("dynamicTextarea"));
+    };
+  </script>
   <textarea
-    type="text"
-    name="override_categories"
-    value="{{override_categories}}"
-  ></textarea>
+    id="dynamicTextarea"
+    name="custom_categories"
+    oninput="adjustHeight(this);"
+  >
+{{custom_categories}}</textarea
+  >
 
   <input type="submit" value="Update Record" />
 </form>
