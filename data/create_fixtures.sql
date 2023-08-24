@@ -22,5 +22,6 @@ CREATE TABLE IF NOT EXISTS headers (
     date_head TEXT NOT NULL,
     description_head TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    customRules TEXT NULL
+    custom_rules TEXT NULL,
+    custom_categories TEXT NULL
 );

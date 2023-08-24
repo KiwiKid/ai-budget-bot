@@ -3,6 +3,7 @@
   hx-post="/api/tset/{{ts_id}}/headers"
   enctype="multipart/form-data"
 >
+  <h2>{{ message }}</h2>
   <label for="amount">Amount:</label>
   <input
     type="text"
@@ -29,6 +30,16 @@
     required
     value="{{description_head}}"
   /><br />
+
+  <label for="custom_rules">Custom Rules:</label>
+  <textarea type="text" name="custom_rules" value="{{custom_rules}}"></textarea>
+
+  <label for="custom_rules">Override Categories:</label>
+  <textarea
+    type="text"
+    name="override_categories"
+    value="{{override_categories}}"
+  ></textarea>
 
   <input type="submit" value="Update Record" />
 </form>

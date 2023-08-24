@@ -36,13 +36,26 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done):
     transactions = db.get_transactions(
         user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False)
 
-    headers = db.get_header(user_id=user_id, ts_id=ts_id)
-
     print(
         f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
 
-    return templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "headers": headers, "page": page, "limit": limit, "message": message, "done": done})
+    return templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit, "message": message, "done": done})
 
+
+def present_headers(user_id, request, ts_id, message):
+    db = DataManager()
+    headers = db.get_header(user_id=user_id, ts_id=ts_id)
+
+    return templates.TemplateResponse("edit_header.html", {
+        "message": message,
+        'request': request,
+        'ts_id': headers[0][0],
+        'amount_head': headers[0][2],
+        'date_head': headers[0][3],
+        'description_head': headers[0][4],
+        'custom_rules': headers[0][5],
+        'custom_categories': headers[0][6]
+    })
 
 # def add_subscriber(ts_id, t_id, message):
 #    if ts_id not in subscribers:
@@ -152,8 +165,11 @@ def index(ts_id: str, request: Request):
        #     'event': 'start_category'
        # })
 
+    headers = db.get_header(user_id=userId, ts_id=ts_id)
+
     print(f"categorize transactions {len(transactions)}")
-    response = aiClient.categorizeTransactions(transactions, [])
+    response = aiClient.categorizeTransactions(
+        transactions, overrideCategories=headers[0][7])
     print(f"categorized transactions - Got: {len(response['categories'])}")
     processed = 0
 
@@ -314,22 +330,16 @@ def chart_view_hx(ts_id: str, request: Request):
 
 @router.get("/api/tset/{ts_id}/headers")
 def get_headers(
-    ts_id: str
+    ts_id: str,
+    request: Request
 ):
-    db = DataManager()
-    headers = db.get_header(ts_id)
-
-    return templates.TemplateResponse("tset/edit_form.html", {
-        'ts_id': headers[0],
-        'amount_head': headers[1],
-        'date_head': headers[2],
-        'description_head': headers[3]
-    })
+    return present_headers(user_id=userId, request=request, ts_id=ts_id, message='')
 
 
 @router.put("/api/tset/{ts_id}/headers")
 async def update_headers(
     ts_id: str,
+    request: Request,
     amount: str = Form(...),
     date: str = Form(...),
     description: str = Form(...),
@@ -346,23 +356,10 @@ async def update_headers(
     # Assuming db.save_header returns a response indicating success
     res = db.save_header(record)
 
-    headers = db.get_header(ts_id)
-
     if res:
-        return templates.TemplateResponse("tset/edit_form.html", {
-            'ts_id': ts_id,
-            'amount_head': headers[1],
-            'date_head': headers[2],
-            'description_head': headers[2]
-        })
+        return present_headers(user_id=userId, request=request, ts_id=ts_id, message='')
     else:
-        return templates.TemplateResponse("tset/tset.html", {
-            "error": "error saving form",
-            'ts_id': ts_id,
-            'amount_head': headers[0],
-            'date_head': headers[1],
-            'description_head': headers[2]
-        })
+        return present_headers(user_id=userId, request=request, ts_id=ts_id, message='error saving form')
 
 
 @router.post("/tset/{ts_id}/upload")
@@ -450,18 +447,6 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
 
     return present_transactions(userId, request, ts_id=ts_id, page=0, limit=100, message='', done=False)
     # Return the HTMX template response
-    return templates.TemplateResponse("tset/tset.html", {
-        "request": request,
-        "rows": rows,
-        "rows_as_lists": rows_as_lists,
-        "transactions": transactions,
-        "headers": headers,
-        #   "raw_upload": raw_upload,
-        "ts_id": ts_id,
-        "header_set": existingHeaders,
-        "is_existing": isExisting,
-        "save_count": len(rows)
-    })
 
 
 @router.get("/tset/{ts_id}/table")

@@ -30,7 +30,7 @@ class DataManager:
         """Saves a header to the headers table."""
         try:
             query = text('''
-                INSERT INTO headers (ts_id, user_id, amount_head, date_head, description_head) 
+                INSERT INTO headers (ts_id, user_id, amount_head, date_head, description_head, custom_rules, custom_categories) 
                 VALUES (:ts_id, :user_id, :amount_head, :date_head, :description_head)
                 RETURNING *
             ''')
@@ -41,7 +41,9 @@ class DataManager:
                                            'amount_head': header['amount_head'],
                                            'date_head': header['date_head'],
                                            'description_head': "|".join(
-                                               header['description_head'])
+                                               header['description_head']),
+                                           'custom_rules': header['custom_rules'],
+                                           'custom_categories': header['custom_categories']
                                        }
                                        )
 

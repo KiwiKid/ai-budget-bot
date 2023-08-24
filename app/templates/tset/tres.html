@@ -1,18 +1,10 @@
 {% extends "/shared/_base.html" %} {% block content %}
 
 <div id="mainContent">
-  <div style="position: fixed; right:10%; top: 300px; z-index: 99;">
+  <div style="position: fixed; right:10%; top: 300px; z-index: 99; max-width: 200px;">
 
     <h3>Page: {{page + 1}}</h3>
     <h3>Limit: {{limit}}</h3>
-    <div>
-      <a href="/tset/{{ts_id}}/upload">re-upload</a>
-      <button
-        hx-delete="/tset/{{ts_id}}/category"
-        hx-swap="none"
-      >Reset ALL Categories</button>
-      <a href="/">View All Batches</a>
-    </div>
     <div>
 
       {% if page > 0 %}
@@ -27,14 +19,28 @@
         {% endif %} {% if done %} ALL COMPLETE {% else %}
         {% endif %}
     </div>
-    <div hx-get="/api/tset/{{ts_id}}/headers">
+    <br/><br/>
+    <div>
+      <a href="/tset/{{ts_id}}/upload">re-upload</a>
+    </div>
+    <div>
+      <button
+        hx-delete="/tset/{{ts_id}}/category"
+        hx-swap="none"
+      >Reset ALL Categories</button>
+    </div>
+
+    <div>
+        <a href="/">View All Batches</a>
+    </div>
+
+    <div hx-get="/api/tset/{{ts_id}}/headers" hx-trigger="load">
       <div hx-swap="outerHTML" hx-target="#form-container"></div>
   
       <div id="form-container">
           <!-- The form content will be injected here -->
       </div>
     </div>
-    <textarea>{{headers}}</textarea>
    
   </div>
   <div>
