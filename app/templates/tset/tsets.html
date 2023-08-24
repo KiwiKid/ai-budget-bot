@@ -14,7 +14,9 @@
 <div>
   {% for set in sets %}
   <div>
-    <a href="/tset/{{ set[0] }}">{{set[0]}} Transactions: {{set[1]}}</a>
+    <a href="/tset/{{ set[0] }}"
+      >{{set[0]}} Transactions: {{set[1]}} {{set[2]}}</a
+    >
   </div>
 
   {% endfor %}

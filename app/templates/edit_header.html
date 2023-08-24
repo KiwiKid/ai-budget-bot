@@ -1,0 +1,34 @@
+<form
+  id="update-form"
+  hx-post="/api/tset/{{ts_id}}/headers"
+  enctype="multipart/form-data"
+>
+  <label for="amount">Amount:</label>
+  <input
+    type="text"
+    name="amount"
+    id="amount"
+    required
+    value="{{amount_head}}"
+  /><br />
+
+  <label for="date">Date:</label>
+  <input
+    type="text"
+    name="date"
+    id="date"
+    required
+    value="{{date_head}}"
+  /><br />
+
+  <label for="description">Description:</label>
+  <input
+    type="text"
+    name="description"
+    id="description"
+    required
+    value="{{description_head}}"
+  /><br />
+
+  <input type="submit" value="Update Record" />
+</form>

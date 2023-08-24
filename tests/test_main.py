@@ -99,7 +99,6 @@ def test_read_main(client):
     assert "Submit</button>" in response.text
 
 
-@pytest.mark.skip()
 def test_file_upload_and_save(client):
     ts_id = str(uuid.uuid4())
 

@@ -11,24 +11,31 @@
         hx-delete="/tset/{{ts_id}}/category"
         hx-swap="none"
       >Reset ALL Categories</button>
-      <a href="/tset">View All Batches</a>
+      <a href="/">View All Batches</a>
     </div>
     <div>
 
       {% if page > 0 %}
-      <a href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
-        > &lt; &lt; &lt; &lt; Previous Page</a
-      >
-      {% endif %} {% if not last_page %}
-      <!-- Assuming you have a boolean variable 'last_page' to indicate the end of the pages -->
-      <a href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
-        >Next Page &gt; &gt; &gt; &gt;</a
-      >
-      {% endif %} {% if done %} ALL COMPLETE {% else %}
-      
-  </div>
-
-    {% endif %}
+        <a href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
+          > &lt; &lt; &lt; &lt; Previous Page</a
+        >
+        {% endif %} {% if not last_page %}
+        <!-- Assuming you have a boolean variable 'last_page' to indicate the end of the pages -->
+        <a href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
+          >Next Page &gt; &gt; &gt; &gt;</a
+        >
+        {% endif %} {% if done %} ALL COMPLETE {% else %}
+        {% endif %}
+    </div>
+    <div hx-get="/api/tset/{{ts_id}}/headers">
+      <div hx-swap="outerHTML" hx-target="#form-container"></div>
+  
+      <div id="form-container">
+          <!-- The form content will be injected here -->
+      </div>
+    </div>
+    <textarea>{{headers}}</textarea>
+   
   </div>
   <div>
   <!--<div style="height: 300px" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=1"></div>

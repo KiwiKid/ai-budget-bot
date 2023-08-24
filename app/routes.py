@@ -5,7 +5,7 @@ import simplejson as json
 from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse, Response
 from app.utils import read_file, CustomJSONEncoder
-from fastapi import APIRouter, Request, UploadFile
+from fastapi import APIRouter, Request, UploadFile, Form
 from jinja2_fragments.fastapi import Jinja2Blocks
 from jinja2 import Environment, FileSystemLoader
 import pandas as pd
@@ -36,9 +36,12 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done):
     transactions = db.get_transactions(
         user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False)
 
+    headers = db.get_header(user_id=user_id, ts_id=ts_id)
+
     print(
         f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
-    return templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit, "message": message, "done": done})
+
+    return templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "headers": headers, "page": page, "limit": limit, "message": message, "done": done})
 
 
 # def add_subscriber(ts_id, t_id, message):
@@ -104,7 +107,7 @@ def index(request: Request):
 @router.get("/tset/{ts_id}")
 def index(ts_id: str, request: Request):
 
-    page = int(request.query_params.get('page', 1))
+    page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
 
     print(f"GET /tset/{ts_id}")
@@ -309,6 +312,59 @@ def chart_view_hx(ts_id: str, request: Request):
 #    # trigger_client_ev
 
 
+@router.get("/api/tset/{ts_id}/headers")
+def get_headers(
+    ts_id: str
+):
+    db = DataManager()
+    headers = db.get_header(ts_id)
+
+    return templates.TemplateResponse("tset/edit_form.html", {
+        'ts_id': headers[0],
+        'amount_head': headers[1],
+        'date_head': headers[2],
+        'description_head': headers[3]
+    })
+
+
+@router.put("/api/tset/{ts_id}/headers")
+async def update_headers(
+    ts_id: str,
+    amount: str = Form(...),
+    date: str = Form(...),
+    description: str = Form(...),
+):
+
+    db = DataManager()
+    record = {
+        "ts_id": ts_id,
+        "amount_head": amount,
+        "date_head": date,
+        "description_head": description,
+    }
+
+    # Assuming db.save_header returns a response indicating success
+    res = db.save_header(record)
+
+    headers = db.get_header(ts_id)
+
+    if res:
+        return templates.TemplateResponse("tset/edit_form.html", {
+            'ts_id': ts_id,
+            'amount_head': headers[1],
+            'date_head': headers[2],
+            'description_head': headers[2]
+        })
+    else:
+        return templates.TemplateResponse("tset/tset.html", {
+            "error": "error saving form",
+            'ts_id': ts_id,
+            'amount_head': headers[0],
+            'date_head': headers[1],
+            'description_head': headers[2]
+        })
+
+
 @router.post("/tset/{ts_id}/upload")
 async def index(ts_id: str, request: Request, bank_csv: UploadFile):
     contents = await bank_csv.read()
@@ -321,7 +377,7 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
     headers = list(rows[0].keys()) if rows else []
 
     db = DataManager()
-    existingHeaders = db.get_header_by_session(userId)
+    existingHeaders = db.get_header(user_id=userId, ts_id=ts_id)
     isExisting = True
 
     if not existingHeaders:
@@ -357,7 +413,7 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
             print(f"Could not save header")
             raise 'Could not save header'
         print(f"headers saved")
-        existingHeaders = db.get_header_by_session(user_id=userId)
+        existingHeaders = db.get_header(user_id=userId, ts_id=ts_id)
         print(f"retrieved existingHeaders: {len(existingHeaders)}")
 
     for row in rows:

@@ -32,6 +32,7 @@ class DataManager:
             query = text('''
                 INSERT INTO headers (ts_id, user_id, amount_head, date_head, description_head) 
                 VALUES (:ts_id, :user_id, :amount_head, :date_head, :description_head)
+                RETURNING *
             ''')
             result = self.conn.execute(query,
                                        {
@@ -91,10 +92,11 @@ class DataManager:
         except Exception as e:  # Catching a generic exception to log the actual error message
             raise ValueError(f"could not save record. Error: {e}")
 
-    def get_header_by_session(self, user_id):
+    def get_header(self, user_id, ts_id):
         """Returns headers filtered by a given userId."""
-        query = text('SELECT * FROM headers WHERE user_id = :user_id')
-        result = self.conn.execute(query, {'user_id': user_id})
+        query = text(
+            'SELECT * FROM headers WHERE user_id = :user_id AND ts_id = :ts_id')
+        result = self.conn.execute(query, {'user_id': user_id, 'ts_id': ts_id})
         return result.fetchall()
 
     def get_transactions(self, user_id: uuid, ts_id: uuid, page: int, limit: int, negative_only: bool):
@@ -187,7 +189,7 @@ class DataManager:
     def get_transaction_sets_by_session(self, user_id):
         """Returns transactions filtered by a given user_id."""
         query = text('''
-            SELECT ts_id, COUNT(*) 
+            SELECT ts_id, COUNT(*), MIN(created_at) AS earliest_created_at
             FROM transactions 
             WHERE user_id = :user_id
             GROUP BY ts_id
