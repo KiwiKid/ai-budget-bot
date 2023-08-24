@@ -28,6 +28,8 @@ docker exec -it ai-budget-bot-data-1 psql -U myuser -W mydatabase
 # Reset DB:
 
 docker ps -a --filter volume=ai-budget-bot_pgdata
+
+docker stop [CONTAINT_ID]
 docker container rm [CONTAINT_ID]
 
 docker volume rm ai-budget-bot_pgdata

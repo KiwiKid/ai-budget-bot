@@ -32,6 +32,10 @@
     value="{{description_head}}"
   /><br />
 
+  {% for desc in description_head%}
+  <input name="description[{{ loop.index0 }}]" value="{{desc}}" />
+  {% endfor %}
+
   <label for="custom_rules">Custom Rules:</label>
   <textarea
     name="custom_rules"
@@ -47,14 +51,14 @@
       textarea.style.height = textarea.scrollHeight + 30 + "px";
     }
   </script>
-  <textarea
-    id="dynamicTextarea"
-    name="custom_categories"
-    oninput="adjustHeight(this);"
-    onclick="adjustHeight(this);"
-  >
-{{custom_categories}}</textarea
-  >
+
+  <textarea>{{custom_categories}}</textarea>
+
+  {% for cat in custom_categories%}
+  <input name="custom_categories[{{ loop.index0 }}]" value="{{cat}}" />
+  {% endfor %}
+  <label for="custom_categories_new">New Category</label>
+  <input name="custom_categories_new" />
 
   <input type="submit" value="Update Record" />
 </form>

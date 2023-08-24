@@ -29,6 +29,20 @@ subscribers = {}
 runEventLoop = True
 
 
+def clean_description(description_parts, removals):
+    cleaned_parts = []
+
+    for part in description_parts:
+        for rem in removals:
+            # Remove unwanted substrings from each part
+            part = part.replace(rem, '')
+        # Add the cleaned part to the new list
+        cleaned_parts.append(part.strip())
+
+    # Join the cleaned parts back together, and remove any extra spaces
+    return ' '.join(cleaned_parts).strip()
+
+
 def present_transactions(user_id, request, ts_id, page, limit, message, done):
     db = DataManager()
 
@@ -45,7 +59,10 @@ def present_headers(user_id, request, ts_id, message):
     db = DataManager()
     headers = db.get_header(user_id=user_id, ts_id=ts_id)
 
-    if len(headers.custom_categories) == 0:
+    if not headers:
+        raise "no headers to raise"
+
+    if len(headers.custom_categories) == 0 or headers.custom_categories[0] == '':
         overrideCategories = [
             'Housing',
             'Groceries',
@@ -68,7 +85,7 @@ def present_headers(user_id, request, ts_id, message):
         'date_head': headers.date_head,
         'description_head': headers.description_head,
         'custom_rules': headers.custom_rules,
-        'custom_categories': json.dumps(overrideCategories, indent=4)
+        'custom_categories': overrideCategories
     })
 
 # def add_subscriber(ts_id, t_id, message):
@@ -142,11 +159,19 @@ def index(ts_id: str, request: Request):
         request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message='', done=False)
 
 
+@router.delete("/tset/{ts_id}")
+def index(ts_id: str, request: Request):
+
+    db = DataManager()
+    db.delete_transaction_set(ts_id=ts_id)
+    return Response(status_code=200, headers={'HX-Refresh': 'true'}, media_type="application/json")
+
+
 @router.delete("/tset/{ts_id}/category")
 def index(ts_id: str, request: Request):
     db = DataManager()
     db.reset_transaction_set(ts_id=ts_id)
-    return Response(status_code=200, media_type="application/json", request=request)
+    return Response(status_code=200, media_type="application/json")
 
 
 @router.delete("/tset/{ts_id}/t_id/{t_id}/category")
@@ -358,18 +383,23 @@ async def update_headers(
     amount: str = Form(...),
     date: str = Form(...),
     description: str = Form(...),
-    custom_rules: Optional[str] = Form(None),
-    custom_categories: Optional[str] = Form(None)
+    custom_rules: Optional[List[str]] = Form(None),
+    custom_categories: Optional[List[str]] = Form(None),
+    custom_categories_new: Optional[str] = Form(None)
 ):
-    try:
-        custom_categories = json.loads(custom_categories)
-        if isinstance(custom_categories, bytes):
-            custom_categories = custom_categories.decode('utf-8')
-    except json.JSONDecodeError:
-        # Handle the error as you see fit (logging, returning an error response, etc.)
-        return present_headers(user_id=userId, request=request, ts_id=ts_id, message="Invalid JSON format for custom_categories")
+  # try:
+  #     custom_categories = json.loads(custom_categories)
+  #     if isinstance(custom_categories, bytes):
+  #         custom_categories = custom_categories.decode('utf-8')
+  # except json.JSONDecodeError:
+  #     # Handle the error as you see fit (logging, returning an error response, etc.)
+  #     return present_headers(user_id=userId, request=request, ts_id=ts_id, message="Invalid JSON format for custom_categories")
 
     db = DataManager()
+
+    if custom_categories_new != None:
+        categoriesToSave = custom_categories.append(custom_categories_new)
+
     record = {
         "ts_id": ts_id,
         "amount_head": amount,
@@ -377,7 +407,7 @@ async def update_headers(
         "date_head": date,
         "description_head": description,
         'custom_rules': custom_rules,
-        'custom_categories': custom_categories
+        'custom_categories': categoriesToSave
     }
 
     # Assuming db.save_header returns a response indicating success
@@ -402,7 +432,6 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
 
     db = DataManager()
     existingHeaders = db.get_header(user_id=userId, ts_id=ts_id)
-    isExisting = True
 
     if not existingHeaders:
         print(f"no existing headers, calling openai")
@@ -433,14 +462,13 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
             'custom_rules': '',
             'custom_categories': ''
         }
-        print(f"saving headers..{record}")
         saveHeader = db.save_header(record)
         if saveHeader is None:
             print(f"Could not save header")
             raise Exception('Could not save header')
         print(f"headers saved")
         existingHeaders = db.get_header(user_id=userId, ts_id=ts_id)
-        print(f"retrieved existingHeaders: {len(existingHeaders)}")
+        print(f"retrieved existingHeaders: {existingHeaders}")
 
     for row in rows:
         t_id = str(uuid.uuid4())
@@ -451,31 +479,19 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
         description_parts = [str(row[header])
                              for header in descriptionFields if header in row]
 
-        removals = ['nan', 'Df']
-        for idx, part in enumerate(description_parts):
-            for rem in removals:
-                part = part.replace(rem, ' ')
-            description_parts[idx] = part.strip()
-
-        description = ' '.join(description_parts).strip()
+        description = clean_description(
+            description_parts, ['nan', 'Df'])
 
         print(f"saving transaction")
         trans = db.save_transaction(t_id=t_id, ts_id=ts_id, user_id=userId, amount=float(amount),
                                     date=date, description=description, status='pending')
-        print(f"saved transaction {trans.returns_rows}")
+        print(f"saved transaction {trans}")
 
     doubleCheckSave = db.get_transaction_sets_by_session(userId)
 
     print(f"saved transaction sets {doubleCheckSave[0].count}")
 
-    # Process rows (make HTTP requests)
-
-    # results = await process_rows(rows_as_lists)
-
-    # TRY/TEMP use present transactions
-
     return present_transactions(userId, request, ts_id=ts_id, page=0, limit=100, message='', done=False)
-    # Return the HTMX template response
 
 
 @router.get("/tset/{ts_id}/table")

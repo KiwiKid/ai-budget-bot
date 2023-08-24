@@ -1,11 +1,14 @@
 import os
 from fastapi import UploadFile
 from typing import List
-from app.DataManager import DataManager
 from pandas import DataFrame, Grouper, to_timedelta, to_datetime
 import json
 import pandas as pd
 from dotenv import load_dotenv, find_dotenv
+
+
+def pg_array_to_python_list(array_str):
+    return [item.strip('{}') for item in array_str.split(",")]
 
 
 async def read_file(file: UploadFile) -> List[str]:

@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS headers (
     user_id UUID NOT NULL,
     amount_head TEXT NOT NULL,
     date_head TEXT NOT NULL,
-    description_head TEXT NOT NULL,
+    description_head TEXT[] NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    custom_rules TEXT NULL,
-    custom_categories TEXT NULL
+    custom_rules TEXT[] NULL,
+    custom_categories TEXT[] NULL
 );

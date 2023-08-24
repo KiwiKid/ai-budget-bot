@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, text
 import os
 from datetime import datetime
 from dateutil.parser import parse
+import json
 import uuid
 from app.Header import Header
 # Set to reset table structure on next db access (remember to turn off again...)
@@ -30,6 +31,7 @@ class DataManager:
     def save_header(self, header):
         """Saves a header to the headers table."""
         try:
+            print(f"saving headers\n {header}")
             query = text('''
                 INSERT INTO headers (ts_id, user_id, amount_head, date_head, description_head, custom_rules, custom_categories) 
                 VALUES (:ts_id, :user_id, :amount_head, :date_head, :description_head, :custom_rules, :custom_categories)
@@ -40,17 +42,14 @@ class DataManager:
                                            'user_id': header['user_id'],
                                            'amount_head': header['amount_head'],
                                            'date_head': header['date_head'],
-                                           'description_head': "|".join(
-                                               header['description_head']),
-                                           # header['custom_rules'],
-                                           'custom_rules': 'Anything',
-                                           # "|".join(header['custom_categories'])
-                                           'custom_categories': 'Anything2'
+                                           'description_head': header['description_head'],
+                                           'custom_rules': header['custom_rules'],
+                                           'custom_categories': header['custom_categories']
                                        }
                                        )
-            print(f"saving header")
-            self.conn.commit()
 
+            self.conn.commit()
+            print(f"saved header")
             return result.rowcount
 
         except Exception as e:
@@ -99,15 +98,16 @@ class DataManager:
 
     def get_header(self, user_id, ts_id):
         """Returns headers filtered by a given userId."""
+        print(f"get_header(user_id={user_id} ts_id={ts_id})")
         query = text(
-            'SELECT * FROM headers WHERE user_id = :user_id AND ts_id = :ts_id')
+            'SELECT * FROM headers WHERE user_id = :user_id AND ts_id = :ts_id ORDER BY created_at DESC')
         result = self.conn.execute(query, {'user_id': user_id, 'ts_id': ts_id})
 
         row = result.fetchone()
 
         if row:
             return Header(ts_id=row[0], user_id=row[1], amount_head=row[2], date_head=row[3], description_head=row[4],
-                          created_at=row[5], custom_categories=row[6], custom_rules=row[7])
+                          created_at=row[5], custom_rules=row[6], custom_categories=row[7])
 
     def get_transactions(self, user_id: uuid, ts_id: uuid, page: int, limit: int, negative_only: bool):
         offset = page * limit

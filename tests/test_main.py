@@ -99,6 +99,37 @@ def test_read_main(client):
     assert "Submit</button>" in response.text
 
 
+def test_header_save_and_get(client):
+    db = DataManager()
+
+    record = {
+        "ts_id": str(uuid.uuid4()),
+        "amount_head": 'Amount',
+        'user_id': user_id,
+        "date_head": 'Date',
+        "description_head": ["Description", "OtherDescription"],
+        'custom_rules': "custom_rules",
+        'custom_categories': ["custom_categories", "custom_categories2", "custom_categories3"]
+    }
+    saveRes = db.save_header(record)
+
+    assert saveRes == 1
+
+    savedHeader = db.get_header(
+        ts_id=record['ts_id'], user_id=record['user_id'])
+
+    if savedHeader:
+        assert str(savedHeader.ts_id) == record['ts_id']
+        assert savedHeader.amount_head == 'Amount'
+        assert savedHeader.date_head == 'Date'
+        assert savedHeader.description_head == record["description_head"]
+        assert savedHeader.custom_rules == 'custom_rules'
+        assert savedHeader.custom_categories == record["custom_categories"]
+
+    else:
+        raise "Should save header"
+
+
 def test_file_upload_and_save(client):
     ts_id = str(uuid.uuid4())
 
