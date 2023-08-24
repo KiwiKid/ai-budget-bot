@@ -52,8 +52,6 @@
     }
   </script>
 
-  <textarea>{{custom_categories}}</textarea>
-
   {% for cat in custom_categories%}
   <input name="custom_categories[{{ loop.index0 }}]" value="{{cat}}" />
   {% endfor %}
