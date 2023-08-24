@@ -45,7 +45,7 @@ def present_headers(user_id, request, ts_id, message):
     db = DataManager()
     headers = db.get_header(user_id=user_id, ts_id=ts_id)
 
-    if not headers[0][6]:
+    if len(headers.custom_categories) == 0:
         overrideCategories = [
             'Housing',
             'Groceries',
@@ -58,16 +58,16 @@ def present_headers(user_id, request, ts_id, message):
             'Debts'
         ]
     else:
-        overrideCategories = headers[0][6]
+        overrideCategories = headers.custom_categories
 
     return templates.TemplateResponse("edit_header.html", {
         "message": message,
         'request': request,
-        'ts_id': headers[0][0],
-        'amount_head': headers[0][2],
-        'date_head': headers[0][3],
-        'description_head': headers[0][4],
-        'custom_rules': headers[0][5],
+        'ts_id': headers.ts_id,
+        'amount_head': headers.amount_head,
+        'date_head': headers.date_head,
+        'description_head': headers.description_head,
+        'custom_rules': headers.custom_rules,
         'custom_categories': json.dumps(overrideCategories, indent=4)
     })
 
@@ -433,23 +433,23 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
             'custom_rules': '',
             'custom_categories': ''
         }
-        print(f"saving headers..")
-        res = await db.save_header(record)
-        if res == 0:
+        print(f"saving headers..{record}")
+        saveHeader = db.save_header(record)
+        if saveHeader is None:
             print(f"Could not save header")
-            raise 'Could not save header'
+            raise Exception('Could not save header')
         print(f"headers saved")
         existingHeaders = db.get_header(user_id=userId, ts_id=ts_id)
         print(f"retrieved existingHeaders: {len(existingHeaders)}")
 
     for row in rows:
         t_id = str(uuid.uuid4())
-        amount: str = str(row[existingHeaders[0][2]])
-        date: str = row[existingHeaders[0][3]]
-        headers = existingHeaders[0][4].split('|')
+        amount: str = str(row[existingHeaders.amount_head])
+        date: str = row[existingHeaders.date_head]
+        descriptionFields = existingHeaders.description_head
 
         description_parts = [str(row[header])
-                             for header in headers if header in row]
+                             for header in descriptionFields if header in row]
 
         removals = ['nan', 'Df']
         for idx, part in enumerate(description_parts):

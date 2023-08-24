@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from dateutil.parser import parse
 import uuid
+from app.Header import Header
 # Set to reset table structure on next db access (remember to turn off again...)
 user = os.getenv('POSTGRES_USER')
 password = os.getenv('POSTGRES_PASSWORD')
@@ -32,7 +33,6 @@ class DataManager:
             query = text('''
                 INSERT INTO headers (ts_id, user_id, amount_head, date_head, description_head, custom_rules, custom_categories) 
                 VALUES (:ts_id, :user_id, :amount_head, :date_head, :description_head, :custom_rules, :custom_categories)
-                RETURNING *
             ''')
             result = self.conn.execute(query,
                                        {
@@ -42,16 +42,20 @@ class DataManager:
                                            'date_head': header['date_head'],
                                            'description_head': "|".join(
                                                header['description_head']),
-                                           'custom_rules': header['custom_rules'],
-                                           'custom_categories': "|".join(header['custom_categories'])
+                                           # header['custom_rules'],
+                                           'custom_rules': 'Anything',
+                                           # "|".join(header['custom_categories'])
+                                           'custom_categories': 'Anything2'
                                        }
                                        )
             print(f"saving header")
             self.conn.commit()
+
             return result.rowcount
 
         except Exception as e:
             print(f"Error save_header: {e}")
+            return None
 
     def save_transaction(self, t_id: str, ts_id: str, user_id: str, amount: str, date: str, description: str, status: str):
         """Saves a transaction to the transactions table."""
@@ -98,7 +102,12 @@ class DataManager:
         query = text(
             'SELECT * FROM headers WHERE user_id = :user_id AND ts_id = :ts_id')
         result = self.conn.execute(query, {'user_id': user_id, 'ts_id': ts_id})
-        return result.fetchall()
+
+        row = result.fetchone()
+
+        if row:
+            return Header(ts_id=row[0], user_id=row[1], amount_head=row[2], date_head=row[3], description_head=row[4],
+                          created_at=row[5], custom_categories=row[6], custom_rules=row[7])
 
     def get_transactions(self, user_id: uuid, ts_id: uuid, page: int, limit: int, negative_only: bool):
         offset = page * limit

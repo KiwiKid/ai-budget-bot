@@ -1,7 +1,7 @@
 {% extends "/shared/_base.html" %} {% block content %}
 
 <div id="mainContent">
-  <div style="position: fixed; right:10%; top: 300px; z-index: 99; max-width: 200px;">
+  <div style="position: fixed; right:10%; top: 300px; z-index: 99; max-width: 250px;">
 
     <h3>Page: {{page + 1}}</h3>
     <h3>Limit: {{limit}}</h3>
@@ -10,7 +10,7 @@
       {% if page > 0 %}
         <a href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
           > &lt; &lt; &lt; &lt; Previous Page</a
-        >
+        ><br/>
         {% endif %} {% if not last_page %}
         <!-- Assuming you have a boolean variable 'last_page' to indicate the end of the pages -->
         <a href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"

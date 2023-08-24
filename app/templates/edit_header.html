@@ -2,6 +2,7 @@
   id="update-form"
   hx-put="/api/tset/{{ts_id}}/headers"
   enctype="multipart/form-data"
+  style="flex: auto"
 >
   <h2>{{ message }}</h2>
   <label for="amount">Amount:</label>
@@ -32,25 +33,25 @@
   /><br />
 
   <label for="custom_rules">Custom Rules:</label>
-  <textarea name="custom_rules"></textarea>
-
+  <textarea
+    name="custom_rules"
+    oninput="adjustHeight(this);"
+    onclick="adjustHeight(this);"
+  ></textarea>
+  <br />
   <label for="custom_categories">Custom Categories:</label>
   <script>
     function adjustHeight(textarea) {
       console.log("adjustHeight");
       textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
+      textarea.style.height = textarea.scrollHeight + 30 + "px";
     }
-
-    // Run on page load
-    window.onload = function () {
-      adjustHeight(document.getElementById("dynamicTextarea"));
-    };
   </script>
   <textarea
     id="dynamicTextarea"
     name="custom_categories"
     oninput="adjustHeight(this);"
+    onclick="adjustHeight(this);"
   >
 {{custom_categories}}</textarea
   >
