@@ -1,28 +1,14 @@
-{% extends "/shared/_base.html" %} {% block content %}
-
-<div>
-  <i>tip: be sure to 'include headers' when exporting for best results</i>
-</div>
-
-<div hx-target="this" hx-swap="outerHTML">
-  <button hx-get="/tset/{{ new_ts_id }}/upload" class="btn btn-primary">
-    New upload
-  </button>
-</div>
-
 <h3>Existing Uploads</h3>
-<div>
+
   {% for set in sets %}
-  <div>
+  <li>
     <a href="/tset/{{ set[0] }}">{{set[0]}} Transactions: {{set[2]}}</a>
     <sub>{{set[1]}}</sub>
     <div hx-target="this" hx-swap="outerHTML">
-      <button hx-delete="/tset/{{ set[0] }}" class="btn btn-primary">
+      <button hx-delete="/tset/{{ set[0] }}" class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none">
         Delete
       </button>
     </div>
   </div>
-
+</li>
   {% endfor %}
-</div>
-{% endblock %}

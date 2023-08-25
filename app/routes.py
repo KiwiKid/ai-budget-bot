@@ -143,9 +143,15 @@ def index(ts_id: str, t_id: str, request: Request):
 @router.get("/")
 def index(request: Request):
     db = DataManager()
+    return templates.TemplateResponse("index.html", {"request": request, "new_ts_id": str(uuid.uuid4())})
+
+
+@router.get("/tsets")
+def index(request: Request):
+    db = DataManager()
     existingTransactionSet = db.get_transaction_sets_by_session(
         userId)
-    return templates.TemplateResponse("tset/tsets.html", {"request": request, "sets": existingTransactionSet, "new_ts_id": str(uuid.uuid4())})
+    return templates.TemplateResponse("tset/tsets.html", {"request": request, "sets": existingTransactionSet})
 
 
 @router.get("/tset/{ts_id}")
@@ -184,6 +190,15 @@ def index(ts_id: str, t_id: str, request: Request):
 @router.get("/tset/{ts_id}/upload")
 def index(ts_id: str, request: Request):
     return templates.TemplateResponse("tset/edit_tset.html", {"request": request, "ts_id": ts_id})
+
+
+@router.get("/sidebar")
+def index(request: Request):
+
+    page = int(request.query_params.get('page', 0))
+    limit = int(request.query_params.get('limit', 50))
+
+    return templates.TemplateResponse("shared/sidebar.html", {"request": request, 'page': page, 'limit': limit})
 
 
 @router.post('/tset/{ts_id}/categorize')

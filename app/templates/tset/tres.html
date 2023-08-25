@@ -4,38 +4,6 @@
   <div
     class="fixed top-1 right-10 z-10 max-w-xs bg-gray-300 p-6 text-lg border-solid border-2 border-sky-500"
   >
-    {% if page > 0 %}
-    <a
-      href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
-      class="block text-blue-600 hover:underline mb-2"
-    >
-      &lt; &lt; &lt; &lt; Previous Page
-    </a>
-    {% endif %}
-    <h3 class="text-xl font-bold">Page: {{page + 1}} Limit: {{limit}}</h3>
-    <div>
-      {% if not last_page %}
-      <a
-        href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
-        class="block text-blue-600 hover:underline"
-      >
-        Next Page &gt; &gt; &gt; &gt;
-      </a>
-      {% endif %} {% if done %}
-      <div class="mt-4 text-lg font-semibold">ALL COMPLETE</div>
-      {% endif %}
-    </div>
-
-    <div>
-      <a href="/tset/{{ts_id}}/upload" class="text-blue-600 hover:underline"
-        >re-upload</a
-      >
-    </div>
-
-    <div class="mb-4">
-      <a href="/" class="text-blue-600 hover:underline">View All Batches</a>
-    </div>
-
     <details>
       <summary>Config</summary>
       <div class="flex flex-col h-96 overflow-y-auto p-4 pb-16">
@@ -50,6 +18,31 @@
     </details>
   </div>
   <div>
+    {% if page > 0 %}
+    <li>
+      <a
+        href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
+        class="block text-blue-600 hover:underline mb-2"
+      >
+        &lt; &lt; &lt; &lt; Previous Page
+      </a>
+    </li>
+    {% endif %}
+    <li>
+      <h3 class="text-xl font-bold">Page: {{page + 1}} Limit: {{limit}}</h3>
+      {% if not last_page %}
+      <a
+        href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
+        class="block text-blue-600 hover:underline"
+      >
+        Next Page &gt; &gt; &gt; &gt;
+      </a>
+    </li>
+    {% endif %} {% if done %}
+    <li>
+      <div class="mt-4 text-lg font-semibold">ALL COMPLETE</div>
+    </li>
+    {% endif %}
     <!--<div style="height: 300px" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=1"></div>
   <div style="height: 300px" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=2"></div>-->
     <!-- Main Content -->
@@ -99,6 +92,33 @@
           {% endfor %}
         </tbody>
       </table>
+      <div>
+        {% if page > 0 %}
+        <div>
+          <a
+            href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
+            class="block text-blue-600 hover:underline mb-2"
+          >
+            &lt; &lt; &lt; &lt; Previous Page
+          </a>
+        </div>
+        {% endif %}
+        <div>
+          <h3 class="text-xl font-bold">Page: {{page + 1}} Limit: {{limit}}</h3>
+          {% if not last_page %}
+          <a
+            href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
+            class="block text-blue-600 hover:underline"
+          >
+            Next Page &gt; &gt; &gt; &gt;
+          </a>
+        </div>
+        {% endif %} {% if done %}
+        <div>
+          <div class="mt-4 text-lg font-semibold">ALL COMPLETE</div>
+        </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 
