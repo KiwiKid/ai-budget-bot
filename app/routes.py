@@ -207,9 +207,9 @@ def index(ts_id: str, request: Request):
     headers = db.get_header(user_id=userId, ts_id=ts_id)
 
     print(
-        f"categorize transactions {len(transactions)} with overrideCategories {headers[0][6]} and rules: {headers[0][7]}")
+        f"categorize transactions {len(transactions)} with overrideCategories {headers.custom_categories} and rules: {headers.custom_rules}")
     response = aiClient.categorizeTransactions(
-        transactions, overrideCategories=headers[0][6], custom_rules=headers[0][7])
+        transactions, overrideCategories=headers.custom_categories, custom_rules=headers.custom_rules)
     print(f"categorized transactions - Got: {len(response['categories'])}")
     processed = 0
 

@@ -20,22 +20,22 @@
     <script src="https://unpkg.com/echarts@5.4.3/dist/echarts.js.map"></script>
     <script src="{{ url_for('static', path='js/htmx.min.js') }}"></script>
     <script src="{{ url_for('static', path='js/echart_ext.js') }}"></script>
-    <!--<script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       if (tailwind) {
         tailwind.config = {
           theme: {
             extend: {
-              colors: {
-                clifford: "#da373d",
+              backgroundColor: {
+                "custom-gray": "rgb(197, 197, 198);",
               },
             },
           },
         };
       }
-    </script>-->
+    </script>
   </head>
-  <body>
+  <body class="bg-custom-gray">
     {% block content %}
     <h1>Hello, there!</h1>
     {% endblock %}
