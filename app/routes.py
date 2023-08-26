@@ -43,7 +43,7 @@ def clean_description(description_parts, removals):
     return ' '.join(cleaned_parts).strip()
 
 
-def present_transactions(user_id, request, ts_id, page, limit, message, done, expanded):
+def present_transactions(user_id: str, request, ts_id: str, page: int, limit: int, message: str, done, expanded):
     db = DataManager()
 
     transactions = db.get_transactions(
@@ -53,7 +53,7 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done, ex
         user_id=user_id, ts_id=ts_id)
 
     print(
-        f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False} total={transactions_stats[0][0]})")
+        f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
 
     transaction_dicts = [ts.to_dict() for ts in transactions_stats]
 
@@ -63,7 +63,7 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done, ex
     total_rows = sum(ts['count']
                      for ts in transaction_dicts if 'count' in ts)
 
-    urlGen = URLGenerator(f'/tset/{ ts_id }')
+    urlGen = URLGenerator(base_url=f'/tset/{ ts_id }', expanded=expanded)
 
    # $3 eariest_date =
    # $3 latest_date =
@@ -91,20 +91,20 @@ def present_headers(user_id, request, ts_id, message):
     if not headers:
         raise "no headers to raise"
 
-    if len(headers.custom_categories) == 0 or headers.custom_categories[0] == '':
-        overrideCategories = [
-            'Housing',
-            'Groceries',
-            'Eating Out',
-            'Transportation',
-            'Healthcare',
-            'Entertainment',
-            'Apparel',
-            'Income',
-            'Debts'
-        ]
-    else:
-        overrideCategories = headers.custom_categories
+  # if len(headers.custom_categories) == 0 or headers.custom_categories[0] == '':
+  #     overrideCategories = [
+  #         'Housing',
+  #         'Groceries',
+  #         'Eating Out',
+  #         'Transportation',
+  #         'Healthcare',
+  #         'Entertainment',
+  #         'Apparel',
+  #         'Income',
+  #         'Debts'
+  #     ]
+  # else:
+  #     overrideCategories = headers.custom_categories
 
     return templates.TemplateResponse("edit_header.html", {
         "message": message,
@@ -229,7 +229,12 @@ def index(request: Request):
     limit = int(request.query_params.get('limit', 50))
     expanded = request.query_params.get('expanded', False) == 'true'
 
-    return templates.TemplateResponse("shared/sidebar.html", {"request": request, 'page': page, 'limit': limit, "expanded": expanded,  "new_ts_id": str(uuid.uuid4())})
+    urlGen = URLGenerator(base_url=f'', expanded=expanded)
+
+    return templates.TemplateResponse("shared/sidebar.html", {"request": request, 'page': page, 'limit': limit, "expanded": expanded,  "new_ts_id": str(uuid.uuid4()),
+                                                              "sidebar_url": urlGen.generate_side_bar_url(),
+                                                              "new_upload_path": urlGen.generate_upload_url(str(uuid.uuid4()))
+                                                              })
 
 
 @router.post('/tset/{ts_id}/categorize')

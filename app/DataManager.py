@@ -4,7 +4,6 @@ from datetime import datetime
 from dateutil.parser import parse
 import json
 import uuid
-from uuid import UUID
 from app.Header import Header
 from app.transaction import Transaction
 from typing import List, Tuple, Optional, NamedTuple, Dict, Any

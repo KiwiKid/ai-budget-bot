@@ -15,6 +15,21 @@ class Header:
                  custom_rules: Optional[str] = None,
                  custom_categories: Optional[str] = None) -> None:
 
+        if len(custom_categories) == 0 or custom_categories[0] == '':
+            self.custom_categories = [
+                'Housing',
+                'Groceries',
+                'Eating Out',
+                'Transportation',
+                'Healthcare',
+                'Entertainment',
+                'Apparel',
+                'Income',
+                'Debts'
+            ]
+        else:
+            self.custom_categories = pg_array_to_python_list(custom_categories)
+
         self.ts_id = ts_id
         self.user_id = user_id
         self.amount_head = amount_head
@@ -22,4 +37,3 @@ class Header:
         self.description_head = pg_array_to_python_list(description_head)
         self.created_at = created_at
         self.custom_rules = custom_rules
-        self.custom_categories = pg_array_to_python_list(custom_categories)
