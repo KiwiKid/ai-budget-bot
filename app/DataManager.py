@@ -4,7 +4,10 @@ from datetime import datetime
 from dateutil.parser import parse
 import json
 import uuid
+from uuid import UUID
 from app.Header import Header
+from app.transaction import Transaction
+from typing import List, Tuple, Optional, NamedTuple, Dict, Any
 # Set to reset table structure on next db access (remember to turn off again...)
 user = os.getenv('POSTGRES_USER')
 password = os.getenv('POSTGRES_PASSWORD')
@@ -20,6 +23,24 @@ db_string = 'postgresql://{}:{}@{}:{}/{}'.format(
 
 if debug:
     print(f"{db_string} {host}")
+
+
+class TransactionSet(NamedTuple):
+    ts_id: str
+    status: int
+    count: int
+    total: int
+    earliest_created_at: datetime
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Converts the TransactionSet to a JSON serializable dictionary."""
+        return {
+            "ts_id": str(self.ts_id),
+            "status": self.status,
+            "count": self.count,
+            "total": self.total,
+            "earliest_created_at": self.earliest_created_at.isoformat()
+        }
 
 
 class DataManager:
@@ -109,7 +130,7 @@ class DataManager:
             return Header(ts_id=row[0], user_id=row[1], amount_head=row[2], date_head=row[3], description_head=row[4],
                           created_at=row[5], custom_rules=row[6], custom_categories=row[7])
 
-    def get_transactions(self, user_id: uuid, ts_id: uuid, page: int, limit: int, negative_only: bool):
+    def get_transactions(self, user_id: str, ts_id: str, page: int, limit: int, negative_only: bool) -> List[Transaction]:
         offset = page * limit
 
         if negative_only:
@@ -122,14 +143,54 @@ class DataManager:
                 query, {'user_id': user_id, 'ts_id': ts_id, 'limit': limit, 'offset': offset})
         else:
             query = text('''
-                SELECT * FROM transactions 
+                SELECT
+                    t_id,
+                    ts_id,
+                    user_id,
+                    date,
+                    description,
+                    amount,
+                    status,
+                    created_at,
+                    category
+                FROM transactions 
                 WHERE user_id = :user_id AND ts_id = :ts_id 
                 LIMIT :limit OFFSET :offset
-            ''')  #
+            ''')
             result = self.conn.execute(
                 query, {'ts_id': ts_id, 'limit': limit, 'offset': offset, 'user_id': user_id, })
 
-        res = result.fetchall()
+        # Assuming the rows come in as a list of dictionaries
+        raw = result.fetchall()
+        res = [Transaction(row[0], row[1], row[2], row[3],
+                           row[4], row[5], row[6], row[7], row[8]) for row in raw]
+
+        return res
+
+    def get_transaction_sets_by_session(self, user_id: int, ts_id: str = None) -> List[TransactionSet]:
+        """Returns transactions filtered by a given user_id and optionally by ts_id."""
+        query_str = '''
+            SELECT ts_id, status, COUNT(*), SUM(amount), MIN(created_at) AS earliest_created_at
+            FROM transactions 
+            WHERE user_id = :user_id
+        '''
+
+        # Add ts_id filtering if provided
+        if ts_id is not None:
+            query_str += ' AND ts_id = :ts_id'
+
+        query_str += ' GROUP BY ts_id, status'
+
+        params = {'user_id': user_id}
+        if ts_id:
+            params['ts_id'] = ts_id
+
+        query = text(query_str)
+        result = self.conn.execute(query, params)
+
+        # Convert the results to a list of TransactionSet
+        res = [TransactionSet(str(row[0]), row[1], row[2], row[3], row[4])
+               for row in result.fetchall()]
 
         return res
 
@@ -196,16 +257,27 @@ class DataManager:
         result = self.conn.execute(query, {'user_id': user_id, 't_id': t_id})
         return result.fetchall()
 
-    def get_transaction_sets_by_session(self, user_id):
-        """Returns transactions filtered by a given user_id."""
-        query = text('''
-            SELECT ts_id, COUNT(*), MIN(created_at) AS earliest_created_at
-            FROM transactions 
-            WHERE user_id = :user_id
-            GROUP BY ts_id
-        ''')
-        result = self.conn.execute(query, {'user_id': user_id})
-        return result.fetchall()
+ #   def get_transaction_sets_by_session(self, user_id: int, ts_id: Optional[UUID] = None) -> List[Tuple[UUID, int, datetime]]:
+ #       """Returns transactions filtered by a given user_id and optionally by ts_id."""
+ #       query_str = '''
+ #           SELECT ts_id, status, COUNT(*), MIN(created_at) AS earliest_created_at
+ #           FROM transactions
+ #           WHERE user_id = :user_id
+ #       '''
+#
+ #       # Add ts_id filtering if provided
+ #       if ts_id is not None:
+ #           query_str += ' AND ts_id = :ts_id'
+#
+ #       query_str += ' GROUP BY ts_id, status'
+#
+ #       params = {'user_id': user_id}
+ #       if ts_id:
+ #           params['ts_id'] = ts_id
+#
+ #       query = text(query_str)
+ #       result = self.conn.execute(query, params)
+ #       return result.fetchall()
 
     def delete_transaction_set(self, ts_id):
         query = text('''

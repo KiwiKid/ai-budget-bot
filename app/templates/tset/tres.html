@@ -1,75 +1,82 @@
 {% extends "/shared/_base.html" %} {% block content %}
-
 <div id="mainContent">
-  <div
-    class="fixed top-1 right-10 z-10 max-w-xs bg-gray-300 p-6 text-lg border-solid border-2 border-sky-500"
-  >
-    <details>
-      <summary>Config</summary>
-      <div class="flex flex-col h-96 overflow-y-auto p-4 pb-16">
-        <div hx-get="/api/tset/{{ts_id}}/headers" hx-trigger="load">
-          <div hx-swap="outerHTML" hx-target="#form-container"></div>
-
-          <div id="form-container">
-            <!-- The form content will be injected here -->
-          </div>
-        </div>
-      </div>
-    </details>
+  <div>
+    grand_total: ${{grand_total}}
+    
   </div>
   <div>
+    <ul>
+    {% for stat in stats %}
+    <li>
+      {{stat.count}} rows are
+      {{stat.status}}
+      (${{stat.total}})
+    </li>
+    {% endfor %}
+  </ul>
+    
+  </div>
+  <div class="flex justify-between items-center mt-4">
     {% if page > 0 %}
-    <li>
-      <a
-        href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
-        class="block text-blue-600 hover:underline mb-2"
-      >
+    <a
+        href="{{prev_page}}"
+        class="text-blue-200 underline"
+    >
         &lt; &lt; &lt; &lt; Previous Page
-      </a>
-    </li>
+    </a>
+    {% else %}
+    <div></div> 
     {% endif %}
-    <li>
-      <h3 class="text-xl font-bold">Page: {{page + 1}} Limit: {{limit}}</h3>
-      {% if not last_page %}
-      <a
-        href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
-        class="block text-blue-600 hover:underline"
-      >
+
+    <div>
+        {% if done %}
+        <div class="text-lg font-semibold">ALL COMPLETE</div>
+        {% endif %} 
+        <div class="text-lg font-bold">Page: {{page + 1 }} Limit: {{limit}}
+          <a href="/tset/{{ts_id}}/upload" class="text-blue-600 hover:underline"
+            >(add new)</a
+          ></div>
+          <div>
+            [{{ page * limit }} - {{ (page +1) * limit}}]
+          </div>
+    </div>
+
+
+    {% if not last_page %}
+    <a
+        href="{{next_page}}"
+        class="text-blue-200 underline"
+    >
         Next Page &gt; &gt; &gt; &gt;
-      </a>
-    </li>
-    {% endif %} {% if done %}
-    <li>
-      <div class="mt-4 text-lg font-semibold">ALL COMPLETE</div>
-    </li>
+    </a>
+    {% else %}
+    <div></div>
     {% endif %}
-    <!--<div style="height: 300px" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=1"></div>
-  <div style="height: 300px" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=2"></div>-->
-    <!-- Main Content -->
+</div>
+
     <div class="flex-grow px-8 py-6">
       <!-- Add your charts here when ready
     <div class="mb-6" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=1"></div>
     <div class="mb-6" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=2"></div>
     -->
 
-      <!-- Table -->
       <table class="min-w-full border border-gray-300 rounded-md">
         <thead>
           <tr>
-            <th class="px-4 py-2 border-b">Date</th>
-            <th class="px-4 py-2 border-b">Description</th>
-            <th class="px-4 py-2 border-b">Amount</th>
-            <th class="px-4 py-2 border-b">Category</th>
+            <th class="px-4 py-2 border-b text-left">Date</th>
+            <th class="px-4 py-2 border-b text-left">Description</th>
+            <th class="px-4 py-2 border-b text-left">Amount</th>
+            <th class="px-4 py-2 border-b text-left">Category</th>
           </tr>
         </thead>
         <tbody>
           {% for transaction in transactions %}
-          <tr class="hover:bg-gray-100">
-            <td class="px-4 py-2 border-b">{{ transaction[3] }}</td>
-            <td class="px-4 py-2 border-b">{{ transaction[4] }}</td>
-            <td class="px-4 py-2 border-b">{{ transaction[5] }}</td>
-            <td class="px-4 py-2 border-b flex items-center">
-              {% if transaction[7] %} {{ transaction[7] }}
+          <tr class="hover:bg-gray-700">
+            <td class="px-4 py-2 border-b text-left">{{ transaction.date }}</td>
+            <td class="px-4 py-2 border-b text-left">{{ transaction.description }}</td>
+            <td class="px-4 py-2 border-b text-left">{{ transaction.amount }}</td>
+            <td class="px-4 py-2 border-b flex items-center text-left">
+              {% if transaction.category %} {{ transaction.category }}
               <button
                 hx-delete="/tset/{{ts_id}}/t_id/{{transaction[0]}}/category"
                 hx-swap="none"
@@ -80,7 +87,7 @@
               {% else %}
               <button
                 hx-post="/tset/{{ts_id}}/categorize"
-                hx-swap="innerHTML"
+                hx-swap="outerHTML"
                 hx-target="#mainContent"
                 class="bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700 focus:outline-none"
               >
@@ -92,35 +99,39 @@
           {% endfor %}
         </tbody>
       </table>
-      <div>
+      <div class="flex justify-between items-center mt-4">
         {% if page > 0 %}
-        <div>
-          <a
+        <a
             href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
-            class="block text-blue-600 hover:underline mb-2"
-          >
+            class="text-blue-200 underline"
+        >
             &lt; &lt; &lt; &lt; Previous Page
-          </a>
-        </div>
+        </a>
+        {% else %}
+        <div></div>
         {% endif %}
+    
         <div>
-          <h3 class="text-xl font-bold">Page: {{page + 1}} Limit: {{limit}}</h3>
-          {% if not last_page %}
-          <a
+            {% if done %}
+            <div class="text-lg font-semibold">ALL COMPLETE</div>
+            {% endif %}
+            <h3 class="text-lg font-bold">Page: {{page + 1}} Limit: {{limit}} {{total}}</h3>
+        </div>
+    
+        {% if not last_page %}
+        <a
             href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
-            class="block text-blue-600 hover:underline"
-          >
+            class="text-blue-200 underline"
+        >
             Next Page &gt; &gt; &gt; &gt;
-          </a>
-        </div>
-        {% endif %} {% if done %}
-        <div>
-          <div class="mt-4 text-lg font-semibold">ALL COMPLETE</div>
-        </div>
+        </a>
+        {% else %}
+        <div></div>
         {% endif %}
-      </div>
+    </div>
     </div>
   </div>
 
   {{ response }} {% endblock %}
+</div>
 </div>

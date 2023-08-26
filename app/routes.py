@@ -15,7 +15,7 @@ import uuid
 
 from typing import List, Optional
 from app.config import Settings
-from app.transaction import TransactionsList, RawTransactionRow
+from app.URLGenerator import URLGenerator
 import signal
 import uuid
 from collections import defaultdict
@@ -43,16 +43,42 @@ def clean_description(description_parts, removals):
     return ' '.join(cleaned_parts).strip()
 
 
-def present_transactions(user_id, request, ts_id, page, limit, message, done):
+def present_transactions(user_id, request, ts_id, page, limit, message, done, expanded):
     db = DataManager()
 
     transactions = db.get_transactions(
         user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False)
 
-    print(
-        f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
+    transactions_stats = db.get_transaction_sets_by_session(
+        user_id=user_id, ts_id=ts_id)
 
-    return templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit, "message": message, "done": done})
+    print(
+        f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False} total={transactions_stats[0][0]})")
+
+    transaction_dicts = [ts.to_dict() for ts in transactions_stats]
+
+    grandTotal = sum(ts['total']
+                     for ts in transaction_dicts if 'total' in ts)
+
+    urlGen = URLGenerator(f'/tset/{ ts_id }')
+
+   # $3 eariest_date =
+   # $3 latest_date =
+
+    return templates.TemplateResponse("tset/tres.html",
+                                      {"request": request,
+                                       "ts_id": ts_id,
+                                       "transactions": transactions,
+                                       "page": page,
+                                       "limit": limit,
+                                       "message": message,
+                                       "done": done,
+                                       "stats": transaction_dicts,
+                                       "grand_total": grandTotal,
+                                       "expanded": expanded,
+                                       "next_page": urlGen.generate_next(page, limit, expanded),
+                                       "prev_page": urlGen.generate_prev(page, limit, expanded)
+                                       })
 
 
 def present_headers(user_id, request, ts_id, message):
@@ -159,10 +185,11 @@ def index(ts_id: str, request: Request):
 
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
+    expanded = request.query_params.get('expanded', False) == 'true'
 
     print(f"GET /tset/{ts_id}")
     return present_transactions(
-        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message='', done=False)
+        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message='', done=False, expanded=expanded)
 
 
 @router.delete("/tset/{ts_id}")
@@ -197,8 +224,9 @@ def index(request: Request):
 
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
+    expanded = request.query_params.get('expanded', False) == 'true'
 
-    return templates.TemplateResponse("shared/sidebar.html", {"request": request, 'page': page, 'limit': limit})
+    return templates.TemplateResponse("shared/sidebar.html", {"request": request, 'page': page, 'limit': limit, "expanded": expanded,  "new_ts_id": str(uuid.uuid4())})
 
 
 @router.post('/tset/{ts_id}/categorize')
@@ -206,13 +234,15 @@ def index(ts_id: str, request: Request):
     db = DataManager()
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
+    expanded = request.query_params.get('expanded', False) == 'true'
+
     aiBatchLimit = min(int(request.query_params.get('limit', 20)), 20)
     transactions = db.get_transactions_to_process(
         userId, ts_id, page, aiBatchLimit)
 
     if not len(transactions) > 0:
         return present_transactions(
-            request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message="ALL PROCESSED", done=True)
+            request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message="ALL PROCESSED", done=True, expanded=expanded)
 
     # for preT in transactions:
        # add_subscriber(preT[1], preT[0], {
@@ -241,7 +271,7 @@ def index(ts_id: str, request: Request):
         processed = processed + 1
 
     return present_transactions(
-        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message="Done", done=False)
+        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message="Done", done=False, expanded=expanded)
 
     # templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit, "message": f"Processed {processed}", "done": False})
 
@@ -436,7 +466,9 @@ async def update_headers(
 
 @router.post("/tset/{ts_id}/upload")
 async def index(ts_id: str, request: Request, bank_csv: UploadFile):
+
     contents = await bank_csv.read()
+    expanded = request.query_params.get('expanded', False) == 'true'
 
     df = pd.read_csv(io.BytesIO(contents))
 
@@ -502,11 +534,7 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
                                     date=date, description=description, status='pending')
         print(f"saved transaction {trans}")
 
-    doubleCheckSave = db.get_transaction_sets_by_session(userId)
-
-    print(f"saved transaction sets {doubleCheckSave[0].count}")
-
-    return present_transactions(userId, request, ts_id=ts_id, page=0, limit=100, message='', done=False)
+    return present_transactions(userId, request, ts_id=ts_id, page=0, limit=100, message='', done=False, expanded=expanded)
 
 
 @router.get("/tset/{ts_id}/table")

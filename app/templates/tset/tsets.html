@@ -4,7 +4,7 @@
   <li>
     <a href="/tset/{{ set[0] }}">{{set[0]}} Transactions: {{set[2]}}</a>
     <sub>{{set[1]}}</sub>
-    <div hx-target="this" hx-swap="outerHTML">
+    <div hx-target="#mainContent" hx-swap="outerHTML">
       <button hx-delete="/tset/{{ set[0] }}" class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none">
         Delete
       </button>
