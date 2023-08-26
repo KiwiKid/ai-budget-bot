@@ -436,8 +436,8 @@ async def update_headers(
     request: Request,
     amount: str = Form(...),
     date: str = Form(...),
-    description: str = Form(...),
-    custom_rules: Optional[List[str]] = Form(None),
+    description: Optional[List[str]] = Form(None),
+    custom_rules: Optional[str] = Form(None),
     custom_categories: Optional[List[str]] = Form(None),
     custom_categories_new: Optional[str] = Form(None)
 ):
@@ -452,7 +452,10 @@ async def update_headers(
     db = DataManager()
 
     if custom_categories_new != None:
-        categoriesToSave = custom_categories.append(custom_categories_new)
+        custom_categories.append(custom_categories_new)
+        categoriesToSave = custom_categories
+    else:
+        categoriesToSave = custom_categories
 
     record = {
         "ts_id": ts_id,
