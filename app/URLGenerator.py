@@ -7,7 +7,7 @@ class URLGenerator:
         self.base_url = base_url
         self.expanded = expanded
 
-    def generate_url(self, page: int, limit: int, expanded: bool) -> str:
+    def generate_url(self, page: int, limit: int) -> str:
         # Ensuring that the page and limit are integers and greater than zero.
         try:
             page = max(0, int(page))
@@ -17,36 +17,42 @@ class URLGenerator:
                 "Both 'page' and 'limit' should be positive integers.")
 
         # Converting the 'expanded' parameter to lowercase string representation of boolean
-        expanded_str = str(expanded).lower()
+        expanded_str = str(self.expanded).lower()
 
         return f"{self.base_url}?page={page}&limit={limit}&expanded={expanded_str}"
 
-    def generate_next(self, page, limit, total, expanded) -> str:
+    def generate_next(self, page, limit, total) -> str:
         page = page + 1
 
         if page * limit > total:
             return ''
 
-        return self.generate_url(page, limit, expanded)
+        return self.generate_url(page, limit)
 
-    def generate_prev(self, page, limit, expanded) -> str:
+    def generate_prev(self, page, limit) -> str:
         page = page - 1
 
         if (page < 0):
             return ''
-        return self.generate_url(page, limit, expanded)
+        return self.generate_url(page, limit)
 
-    def generate_upload_url(expanded: bool, ts_id: Optional[str] = None) -> str:
+    def generate_upload_url(self, ts_id: Optional[str] = None) -> str:
 
-        expanded_str = str(expanded).lower()
+        expanded_str = str(self.expanded).lower()
         uuid_str = str(uuid.uuid4())
         if ts_id:
             return f"/tset/{ ts_id }/upload?expanded={expanded_str}"
 
         return f"/tset/{uuid_str}/upload?expanded={expanded_str}"
 
-    def generate_side_bar_url(expanded) -> str:
+    def generate_side_bar_url(self) -> str:
 
-        expanded_str = str(expanded).lower()
+        expanded_str = str(self.expanded).lower()
 
         return f"/sidebar?expanded={expanded_str}"
+
+    def generate_headers_url(self, ts_id: str) -> str:
+
+        expanded_str = str(self.expanded).lower()
+
+        return f"/api/tset/{ts_id}/headers?expanded={expanded_str}"

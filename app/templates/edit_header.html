@@ -1,112 +1,124 @@
-<form
-  id="update-form"
-  hx-put="/api/tset/{{ts_id}}/headers"
-  enctype="multipart/form-data"
-  class=""
->
-  <h2 class="text-2xl font-bold mb-4">{{ message }}</h2>
+<details>
+  <summary>EDIT CONFIG</summary>
+  <form
+    id="update-form"
+    hx-put="/api/tset/{{ts_id}}/headers"
+    enctype="multipart/form-data"
+    class=""
+  >
+    <h2 class="text-2xl font-bold mb-4">{{ message }}</h2>
 
-  <div class="mb-4">
-    <label for="amount" class="block text-sm font-medium text-gray-700"
-      >Amount:</label
-    >
+    <div class="mb-4">
+      <label for="amount" class="block text-sm font-medium text-gray-200"
+        >Amount:</label
+      >
+      <input
+        type="text"
+        name="amount"
+        id="amount"
+        required
+        value="{{amount_head}}"
+        class="mt-1 p-2 border rounded-md w-full text-black"
+      />
+    </div>
+
+    <div class="mb-4">
+      <label for="date" class="block text-sm font-medium text-gray-200"
+        >Date:</label
+      >
+      <input
+        type="text"
+        name="date"
+        id="date"
+        required
+        value="{{date_head}}"
+        class="mt-1 p-2 border rounded-md w-full text-black"
+      />
+    </div>
+
+    <div class="mb-4">
+      <label for="description" class="block text-sm font-medium text-gray-200"
+        >Description:</label
+      >
+      {% for desc in description_head %}
+      <input
+        name="description[{{ loop.index0 }}]"
+        value="{{desc}}"
+        class="mt-1 p-2 border rounded-md w-full mb-2 text-black"
+      />
+      {% endfor %}
+    </div>
+
+    <div class="mb-4">
+      <label for="custom_rules" class="block text-sm font-medium text-gray-200"
+        >Custom Rules:</label
+      >
+      <textarea
+        name="custom_rules"
+        oninput="adjustHeight(this);"
+        onclick="adjustHeight(this);"
+        class="mt-1 p-2 border rounded-md w-full text-black"
+      ></textarea>
+    </div>
+
+    <script>
+      function adjustHeight(textarea) {
+        console.log("adjustHeight");
+        textarea.style.height = "auto";
+        textarea.style.height = textarea.scrollHeight + 30 + "px";
+      }
+    </script>
+
+    <div class="mb-4">
+      <label
+        for="custom_categories"
+        class="block text-sm font-medium text-gray-200"
+        >Custom Categories:</label
+      >
+      {% for cat in custom_categories %}
+      <input
+        name="custom_categories[{{ loop.index0 }}]"
+        value="{{cat}}"
+        class="mt-1 p-2 border rounded-md w-full mb-2 text-black"
+      />
+      {% endfor %}
+    </div>
+
+    <div>
+      <label
+        for="custom_categories_new"
+        class="block text-sm font-medium text-gray-200"
+        >Add a new Category:</label
+      >
+      <input
+        name="custom_categories_new"
+        class="mt-1 p-2 border rounded-md w-full text-black"
+      />
+    </div>
+
     <input
-      type="text"
-      name="amount"
-      id="amount"
-      required
-      value="{{amount_head}}"
-      class="mt-1 p-2 border rounded-md w-full"
+      type="submit"
+      value="Save"
+      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
     />
-  </div>
-
-  <div class="mb-4">
-    <label for="date" class="block text-sm font-medium text-gray-700"
-      >Date:</label
-    >
-    <input
-      type="text"
-      name="date"
-      id="date"
-      required
-      value="{{date_head}}"
-      class="mt-1 p-2 border rounded-md w-full"
-    />
-  </div>
-
-  <div class="mb-4">
-    <label for="description" class="block text-sm font-medium text-gray-700"
-      >Description:</label
-    >
-    {% for desc in description_head %}
-    <input
-      name="description[{{ loop.index0 }}]"
-      value="{{desc}}"
-      class="mt-1 p-2 border rounded-md w-full mb-2"
-    />
-    {% endfor %}
-  </div>
-
-  <div class="mb-4">
-    <label for="custom_rules" class="block text-sm font-medium text-gray-700"
-      >Custom Rules:</label
-    >
-    <textarea
-      name="custom_rules"
-      oninput="adjustHeight(this);"
-      onclick="adjustHeight(this);"
-      class="mt-1 p-2 border rounded-md w-full"
-    ></textarea>
-  </div>
-
-  <script>
-    function adjustHeight(textarea) {
-      console.log("adjustHeight");
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + 30 + "px";
-    }
-  </script>
-
-  <div class="mb-4">
-    <label
-      for="custom_categories"
-      class="block text-sm font-medium text-gray-700"
-      >Custom Categories:</label
-    >
-    {% for cat in custom_categories %}
-    <input
-      name="custom_categories[{{ loop.index0 }}]"
-      value="{{cat}}"
-      class="mt-1 p-2 border rounded-md w-full mb-2"
-    />
-    {% endfor %}
-  </div>
-
-  <div>
-    <label
-      for="custom_categories_new"
-      class="block text-sm font-medium text-gray-700"
-      >New Category</label
-    >
-    <input
-      name="custom_categories_new"
-      class="mt-1 p-2 border rounded-md w-full"
-    />
-  </div>
-
-  <input
-    type="submit"
-    value="Update Record"
-    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-  />
-  <div>
-    <button
-      hx-delete="/tset/{{ts_id}}/category"
-      hx-swap="none"
-      class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none"
-    >
-      Reset ALL Categories
-    </button>
-  </div>
-  <div style="height: 300px"></div>
-</form>
+    <div class="mt-10"></div>
+    <div>
+      <button
+        hx-delete="/tset/{{ts_id}}/category"
+        hx-swap="none"
+        class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none"
+      >
+        Reset ALL Categories for this batch
+      </button>
+      <div hx-target="#mainContent" hx-swap="outerHTML">
+        <button
+          hx-delete="/tset/{{ ts_id }}"
+          class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none"
+        >
+          Delete This Batch
+        </button>
+      </div>
+    </div>
+    <div style="height: 300px"></div>
+  </form>
+</details>

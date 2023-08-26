@@ -2,12 +2,15 @@
 
   {% for set in sets %}
   <li>
-    <a href="/tset/{{ set[0] }}">({{set[0]}} {{set[2]}})</a>
-    <div hx-target="#mainContent" hx-swap="outerHTML">
-      <button hx-delete="/tset/{{ set[0] }}" class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none">
-        Delete
-      </button>
+      - <a href="/tset/{{ set[0] }}">{{set.count}} row -
+      {{set.first_date.strftime('%b %d %Y')}} to
+      {{set.last_date.strftime('%b %d %Y')}}  <sub>(created {{set.earliest_created_at}})</sub>
+      <div hx-target="#mainContent" hx-swap="outerHTML">
+        <button hx-delete="/tset/{{ set[0] }}" class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none">
+          Delete
+        </button>
+      </div>
     </div>
-  </div>
+  </a>
 </li>
   {% endfor %}

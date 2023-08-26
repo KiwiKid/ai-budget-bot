@@ -26,19 +26,22 @@ if debug:
 
 class TransactionSet(NamedTuple):
     ts_id: str
-    status: int
     count: int
     total: int
     earliest_created_at: datetime
+    first_date: datetime
+    last_date: datetime
 
     def to_dict(self) -> Dict[str, Any]:
         """Converts the TransactionSet to a JSON serializable dictionary."""
         return {
             "ts_id": str(self.ts_id),
-            "status": self.status,
             "count": self.count,
             "total": self.total,
+            "first_date": self.first_date.isoformat(),
+            "last_date": self.last_date.isoformat(),
             "earliest_created_at": self.earliest_created_at.isoformat()
+
         }
 
 
@@ -168,8 +171,9 @@ class DataManager:
 
     def get_transaction_sets_by_session(self, user_id: int, ts_id: str = None) -> List[TransactionSet]:
         """Returns transactions filtered by a given user_id and optionally by ts_id."""
+
         query_str = '''
-            SELECT ts_id, status, COUNT(*), SUM(amount), MIN(created_at) AS earliest_created_at
+            SELECT ts_id, COUNT(*), SUM(amount), MIN(created_at) AS earliest_created_at,  MIN(date) as first_date, MAX(date) AS last_date
             FROM transactions 
             WHERE user_id = :user_id
         '''
@@ -178,7 +182,7 @@ class DataManager:
         if ts_id is not None:
             query_str += ' AND ts_id = :ts_id'
 
-        query_str += ' GROUP BY ts_id, status'
+        query_str += ' GROUP BY ts_id'
 
         params = {'user_id': user_id}
         if ts_id:
@@ -188,7 +192,7 @@ class DataManager:
         result = self.conn.execute(query, params)
 
         # Convert the results to a list of TransactionSet
-        res = [TransactionSet(str(row[0]), row[1], row[2], row[3], row[4])
+        res = [TransactionSet(str(row[0]), row[1], row[2], row[3], row[4], row[5])
                for row in result.fetchall()]
 
         return res
@@ -254,6 +258,29 @@ class DataManager:
             WHERE user_id = :user_id AND t_id = :t_id
         ''')
         result = self.conn.execute(query, {'user_id': user_id, 't_id': t_id})
+        return result.fetchall()
+
+    def get_transaction_set_stats(self, user_id, ts_id, grouping):
+
+        if grouping == 'week':
+            query = text('''
+                SELECT WEEK(date) as week, COUNT(*) as num_transactions, SUM(amount) as total_amount 
+                FROM transactions 
+                WHERE user_id = :user_id AND ts_id = :ts_id
+                GROUP BY WEEK(date)
+            ''')
+        elif grouping == 'month':
+            query = text('''
+                SELECT MONTH(date) as month, COUNT(*) as num_transactions, SUM(amount) as total_amount 
+                FROM transactions 
+                WHERE user_id = :user_id AND ts_id = :ts_id
+                GROUP BY MONTH(date)
+            ''')
+        # Add more grouping options as necessary
+        else:
+            raise ValueError("Unsupported grouping option")
+
+        result = self.conn.execute(query, {'user_id': user_id, 'ts_id': ts_id})
         return result.fetchall()
 
  #   def get_transaction_sets_by_session(self, user_id: int, ts_id: Optional[UUID] = None) -> List[Tuple[UUID, int, datetime]]:

@@ -8,9 +8,7 @@
     <ul>
     {% for stat in stats %}
     <li>
-      {{stat.count}} rows are
-      {{stat.status}}
-      (${{stat.total}})
+      {{stat.count}} rows
     </li>
     {% endfor %}
   </ul>
@@ -51,6 +49,7 @@
 </div>
 
     <div class="flex-grow px-8 py-6">
+      <div hx-trigger="load" hx-get="{{header_form_url}}"></div>
       <!-- Add your charts here when ready
     <div class="mb-6" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=1"></div>
     <div class="mb-6" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=2"></div>

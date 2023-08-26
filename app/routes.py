@@ -79,8 +79,9 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
                                        "stats": transaction_dicts,
                                        "grand_total": grandTotal,
                                        "expanded": expanded,
-                                       "next_page": urlGen.generate_next(page, limit, total_rows, expanded),
-                                       "prev_page": urlGen.generate_prev(page, limit, expanded)
+                                       "next_page": urlGen.generate_next(page, limit, total_rows),
+                                       "prev_page": urlGen.generate_prev(page, limit),
+                                       'header_form_url': urlGen.generate_headers_url(ts_id=ts_id)
                                        })
 
 
@@ -114,7 +115,7 @@ def present_headers(user_id, request, ts_id, message):
         'date_head': headers.date_head,
         'description_head': headers.description_head,
         'custom_rules': headers.custom_rules,
-        'custom_categories': overrideCategories
+        'custom_categories': headers.custom_categories
     })
 
 # def add_subscriber(ts_id, t_id, message):
@@ -200,7 +201,7 @@ def index(ts_id: str, request: Request):
 
     db = DataManager()
     db.delete_transaction_set(ts_id=ts_id)
-    return Response(status_code=200, headers={'HX-Refresh': 'true'}, media_type="application/json")
+    return Response(status_code=200, headers={'HX-Redirect': '/'}, media_type="application/json")
 
 
 @router.delete("/tset/{ts_id}/category")
@@ -233,7 +234,7 @@ def index(request: Request):
 
     return templates.TemplateResponse("shared/sidebar.html", {"request": request, 'page': page, 'limit': limit, "expanded": expanded,  "new_ts_id": str(uuid.uuid4()),
                                                               "sidebar_url": urlGen.generate_side_bar_url(),
-                                                              "new_upload_path": urlGen.generate_upload_url(str(uuid.uuid4()))
+                                                              "new_upload_path": urlGen.generate_upload_url(str(uuid.uuid4())),
                                                               })
 
 

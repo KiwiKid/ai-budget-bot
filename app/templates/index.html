@@ -3,9 +3,5 @@
   <i>tip: be sure to 'include headers' when exporting for best results</i>
 </div>
 
-<div hx-target="#mainContent" hx-swap="outerHTML">
-  <button hx-get="/tset/{{ new_ts_id }}/upload" class="btn btn-primary">
-    New upload
-  </button>
-</div>
+<a href="/tset/{{ new_ts_id }}/upload" class="btn btn-primary"> New upload </a>
 {% endblock %}
