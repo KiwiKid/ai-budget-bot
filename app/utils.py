@@ -1,6 +1,6 @@
 import os
 from fastapi import UploadFile
-from typing import List
+from typing import List, Dict
 from pandas import DataFrame, Grouper, to_timedelta, to_datetime
 import json
 import pandas as pd
@@ -64,3 +64,16 @@ class CustomJSONEncoder(json.JSONEncoder):
         if isinstance(obj, pd.Timestamp):
             return obj.strftime('%Y-%m-%d')
         return super().default(obj)
+
+
+def flatten_form_data(form_data: Dict[str, str], field_prefix: str) -> List[str]:
+    """
+    Flattens form data based on a given field prefix.
+    For example, for the field_prefix 'description', it would combine
+    'description[0]', 'description[1]', ... into a list of values.
+    """
+    result = []
+    for key, value in form_data.items():
+        if key.startswith(field_prefix):
+            result.append(value)
+    return result

@@ -1,9 +1,10 @@
 import time
 import os
+from pydantic import BaseModel
 import simplejson as json
 from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse, Response
-from app.utils import read_file, CustomJSONEncoder
+from app.utils import read_file, CustomJSONEncoder, flatten_form_data
 from fastapi import APIRouter, Request, UploadFile, Form
 from jinja2_fragments.fastapi import Jinja2Blocks
 from jinja2 import Environment, FileSystemLoader
@@ -27,6 +28,15 @@ aiClient = OpenAIClient()
 
 subscribers = {}
 runEventLoop = True
+
+
+class HeaderData(BaseModel):
+    amount: str
+    date: str
+    description: Optional[List[str]]
+    custom_rules: Optional[str]
+    custom_categories: Optional[List[str]]
+    custom_categories_new: Optional[str]
 
 
 def clean_description(description_parts, removals):
@@ -433,13 +443,14 @@ def get_headers(
 @router.put("/api/tset/{ts_id}/headers")
 async def update_headers(
     ts_id: str,
-    request: Request,
-    amount: str = Form(...),
-    date: str = Form(...),
-    description: Optional[List[str]] = Form(None),
-    custom_rules: Optional[str] = Form(None),
-    custom_categories: Optional[List[str]] = Form(None),
-    custom_categories_new: Optional[str] = Form(None)
+    request: Request
+    #  request: Request,
+    #  amount: str = Form(...),
+    #  date: str = Form(...),
+    #  description: Optional[List[str]] = Form(None),
+    # custom_rules: Optional[List[str]] = Form(None),
+    #  custom_categories: Optional[List[str]] = Form(None),
+    # custom_categories_new: Optional[str] = Form(None)
 ):
   # try:
   #     custom_categories = json.loads(custom_categories)
@@ -450,6 +461,17 @@ async def update_headers(
   #     return present_headers(user_id=userId, request=request, ts_id=ts_id, message="Invalid JSON format for custom_categories")
 
     db = DataManager()
+
+    form_data = dict(await request.form())
+
+    # Extract the fields from form_data
+    amount = form_data.get('amount')
+    date = form_data.get('date')
+    custom_categories_new = form_data.get('custom_categories_new')
+
+    description = flatten_form_data(form_data, 'description')
+    custom_rules = flatten_form_data(form_data, 'custom_rules')
+    custom_categories = flatten_form_data(form_data, 'custom_categories')
 
     if custom_categories_new != None:
         custom_categories.append(custom_categories_new)

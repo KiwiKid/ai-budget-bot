@@ -3,9 +3,9 @@
   <form
     id="update-form"
     hx-put="/api/tset/{{ts_id}}/headers"
-    enctype="multipart/form-data"
-    class=""
+    hx-headers='{"Content-Type": "application/json"}'
   >
+    <!-- hx-before-send="javascript:handleBeforeSend"-->
     <h2 class="text-2xl font-bold mb-4">{{ message }}</h2>
 
     <div class="mb-4">

@@ -22,6 +22,34 @@
     <script src="{{ url_for('static', path='js/echart_ext.js') }}"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      function formToJSON(form) {
+        debugger;
+        console.log("formToJSON");
+        let formData = new FormData(form);
+        let obj = {};
+        formData.forEach((value, key) => {
+          if (obj[key] !== undefined) {
+            if (!Array.isArray(obj[key])) {
+              obj[key] = [obj[key]];
+            }
+            obj[key].push(value);
+          } else {
+            obj[key] = value;
+          }
+        });
+        return JSON.stringify(obj);
+      }
+      // Helpers for forms (list support)
+      function handleBeforeSend(xhr, elt) {
+        console.log("handleBeforeSend");
+        let formElement = document.getElementById("update-form");
+        let json = formToJSON(formElement);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(json);
+        return false; // Stop htmx from proceeding with its default send
+      }
+    </script>
+    <script>
       if (tailwind) {
         tailwind.config = {
           theme: {
