@@ -17,12 +17,12 @@
     
   </div>
   <div class="flex justify-between items-center mt-4">
-    {% if page > 0 %}
+    {% if prev_page|length > 0 %}
     <a
         href="{{prev_page}}"
         class="text-blue-200 underline"
     >
-        &lt; &lt; &lt; &lt; Previous Page
+        &lt; &lt; &lt; &lt; Previous Page hmm
     </a>
     {% else %}
     <div></div> 
@@ -42,7 +42,7 @@
     </div>
 
 
-    {% if not last_page %}
+    {% if next_page|length > 0 %}
     <a
         href="{{next_page}}"
         class="text-blue-200 underline"

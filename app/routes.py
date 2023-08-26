@@ -60,6 +60,9 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done, ex
     grandTotal = sum(ts['total']
                      for ts in transaction_dicts if 'total' in ts)
 
+    total_rows = sum(ts['count']
+                     for ts in transaction_dicts if 'count' in ts)
+
     urlGen = URLGenerator(f'/tset/{ ts_id }')
 
    # $3 eariest_date =
@@ -76,7 +79,7 @@ def present_transactions(user_id, request, ts_id, page, limit, message, done, ex
                                        "stats": transaction_dicts,
                                        "grand_total": grandTotal,
                                        "expanded": expanded,
-                                       "next_page": urlGen.generate_next(page, limit, expanded),
+                                       "next_page": urlGen.generate_next(page, limit, total_rows, expanded),
                                        "prev_page": urlGen.generate_prev(page, limit, expanded)
                                        })
 

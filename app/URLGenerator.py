@@ -5,7 +5,7 @@ class URLGenerator:
     def generate_url(self, page: int, limit: int, expanded: bool):
         # Ensuring that the page and limit are integers and greater than zero.
         try:
-            page = max(1, int(page))
+            page = max(0, int(page))
             limit = max(1, int(limit))
         except ValueError:
             raise ValueError(
@@ -16,12 +16,17 @@ class URLGenerator:
 
         return f"{self.base_url}?page={page}&limit={limit}&expanded={expanded_str}"
 
-    def generate_next(self, page, limit, expanded):
+    def generate_next(self, page, limit, total, expanded):
         page = page + 1
+
+        if page * limit > total:
+            return ''
 
         return self.generate_url(page, limit, expanded)
 
     def generate_prev(self, page, limit, expanded):
         page = page - 1
 
+        if (page < 0):
+            return ''
         return self.generate_url(page, limit, expanded)
