@@ -473,11 +473,11 @@ async def update_headers(
     custom_rules = flatten_form_data(form_data, 'custom_rules')
     custom_categories = flatten_form_data(form_data, 'custom_categories')
 
-    if custom_categories_new != None:
+    if custom_categories_new is not None and custom_categories_new != '':
         custom_categories.append(custom_categories_new)
-        categoriesToSave = custom_categories
-    else:
-        categoriesToSave = custom_categories
+
+    categoriesToSave = [
+        category for category in custom_categories if category != '']
 
     record = {
         "ts_id": ts_id,
