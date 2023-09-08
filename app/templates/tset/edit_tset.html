@@ -1,8 +1,12 @@
 {% extends "/shared/_base.html" %} {% block content %}
-
-<div class="p-6">
+<script>
+document.body.addEventListener('htmx:targetError', function(event) {
+  console.error('HTMX Target Error', event.detail);
+});
+</script>
+<div class="p-6" id="mainContent">
   <h1 class="text-2xl font-bold mb-4">Upload csv</h1>
-
+  woah
   <sub>{{ ts_id }}</sub>
 
   <form

@@ -1,9 +1,11 @@
-<details>
+<details id="edit-form">
   <summary>EDIT CONFIG</summary>
   <form
     id="update-form"
     hx-put="/api/tset/{{ts_id}}/headers"
     hx-headers='{"Content-Type": "application/json"}'
+    hx-target="#edit-form"
+    hx-swap="outerHTML"
   >
     <!-- hx-before-send="javascript:handleBeforeSend"-->
     <h2 class="text-2xl font-bold mb-4">{{ message }}</h2>

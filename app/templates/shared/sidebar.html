@@ -5,18 +5,18 @@
   aria-label="Sidebar"
 >
   <button
+    class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 rounded"
     hx-get="/sidebar?expanded=false"
     hx-target="#sidebar"
     hx-swap="outerHTML"
   >
     <div class="p-4">
-      &lt; &lt; &lt; &lt; &lt; &lt; &lt; &lt; &lt; &lt; &lt; &lt; &lt; &lt; &lt;
-      &lt; &lt;
+      CLOSE
     </div>
   </button>
   <div class="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800">
     <ul class="space-y-2 font-medium">
-      <li>
+      <!--<li>
         <a
           href="#"
           class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
@@ -38,38 +38,32 @@
             >Pro</span
           >
         </a>
+      </li>-->
+      <li>
+          <div hx-target="#mainContent" hx-swap="outerHTML" class=" mb-4 text-blue-600 hover:underline"><button hx-get="/tsets">View All Batches</button></div>
       </li>
       <li>
-        <div class="mb-4">
-          <a href="/" class="text-blue-600 hover:underline">View All Batches</a>
-        </div>
-        <div >
-          <button hx-get="{{ new_upload_path }}" class="btn btn-primary">
-            
-          </button>
-        </div>
-        <div
+
+        <a
+          href="/tset/{{ new_ts_id }}/upload"
           class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-          hx-get="{{ new_upload_path }}"
-          hx-target="#mainContent"
-          hx-swap="outerHTML"
         >
           <svg
             class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
             aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 20 20"
+            fill="none"
+            viewBox="0 0 18 16"
           >
             <path
-              d="m17.418 3.623-.018-.008a6.713 6.713 0 0 0-2.4-.569V2h1a1 1 0 1 0 0-2h-2a1 1 0 0 0-1 1v2H9.89A6.977 6.977 0 0 1 12 8v5h-2V8A5 5 0 1 0 0 8v6a1 1 0 0 0 1 1h8v4a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-4h6a1 1 0 0 0 1-1V8a5 5 0 0 0-2.582-4.377ZM6 12H4a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2Z"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M1 8h11m0 0L8 4m4 4-4 4m4-11h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3"
             />
           </svg>
           <span class="flex-1 ml-3 whitespace-nowrap">New upload</span>
-        <!--  <span
-            class="inline-flex items-center justify-center w-3 h-3 p-3 ml-3 text-sm font-medium text-blue-800 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-300"
-            >3</span
-          >-->
         </a>
       </li>
       <li>
@@ -99,6 +93,7 @@
            <span class="ml-4">Upgrade to Pro (coming soon)</span>
         </a>
      </li>
+     <!-- Existing uploads-->
       <div
         hx-get="/tsets"
         hx-target="this"
@@ -164,7 +159,12 @@
   class="fixed top-0 left-0 w-8 z-40 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800 dark:border-gray-700"
   aria-label="Sidebar"
 >
-  <div hx-get="/sidebar?expanded=true" hx-target="#sidebar" hx-swap="outerHTML">
+  <div 
+    hx-get="/sidebar?expanded=true"
+    hx-target="#sidebar"
+    hx-swap="outerHTML"
+    hx-trigger="mouseover throttle:1s"
+    >
     &gt; &gt; &gt; &gt;
   </div>
 </aside>

@@ -242,7 +242,11 @@ def index(request: Request):
 
     urlGen = URLGenerator(base_url=f'', expanded=expanded)
 
-    return templates.TemplateResponse("shared/sidebar.html", {"request": request, 'page': page, 'limit': limit, "expanded": expanded,  "new_ts_id": str(uuid.uuid4()),
+    return templates.TemplateResponse("shared/sidebar.html", {"request": request,
+                                                              'page': page,
+                                                              'limit': limit,
+                                                              "expanded": expanded,
+                                                              "new_ts_id": str(uuid.uuid4()),
                                                               "sidebar_url": urlGen.generate_side_bar_url(),
                                                               "new_upload_path": urlGen.generate_upload_url(str(uuid.uuid4())),
                                                               })
