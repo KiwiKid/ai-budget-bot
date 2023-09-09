@@ -12,6 +12,9 @@ import pandas as pd
 import io
 from app.open_ai_client import OpenAIClient
 from app.DataManager import DataManager
+from app.EventManager import EventManager
+from app.EventQueue import EventQueue
+
 import uuid
 
 from typing import List, Optional
@@ -37,6 +40,26 @@ class HeaderData(BaseModel):
     custom_rules: Optional[str]
     custom_categories: Optional[List[str]]
     custom_categories_new: Optional[str]
+
+
+event_manager = EventManager()
+eq = EventQueue()
+
+
+def event_stream(eq: EventQueue):
+    event_manager.subscribe(eq.send)
+    try:
+        while True:
+            data = eq.receive()
+            yield f"data: event: {data['event']} - message: {data['message']}\n\n"
+            time.sleep(1)
+    finally:
+        event_manager.unsubscribe(eq.send)
+
+
+@router.get("/updates")
+async def updates_endpoint(request: Request):
+    return StreamingResponse(event_stream(eq), media_type="text/event-stream")
 
 
 def clean_description(description_parts, removals):
@@ -91,7 +114,8 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
                                        "expanded": expanded,
                                        "next_page": urlGen.generate_next(page, limit, total_rows),
                                        "prev_page": urlGen.generate_prev(page, limit),
-                                       'header_form_url': urlGen.generate_headers_url(ts_id=ts_id)
+                                       'header_form_url': urlGen.generate_headers_url(ts_id=ts_id),
+                                       "debug": False
                                        })
 
 
@@ -262,6 +286,7 @@ def index(request: Request):
 
 @router.post('/tset/{ts_id}/categorize')
 def index(ts_id: str, request: Request):
+    event_manager.notify('start', '')
     db = DataManager()
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
@@ -279,18 +304,27 @@ def index(ts_id: str, request: Request):
        # add_subscriber(preT[1], preT[0], {
        #     'event': 'start_category'
        # })
-
+    event_manager.notify('start-set', len(transactions))
     headers = db.get_header(user_id=userId, ts_id=ts_id)
 
     print(
         f"categorize transactions {len(transactions)} with overrideCategories {headers.custom_categories} and rules: {headers.custom_rules}")
+    event_manager.notify('loading-set', f"Loading...")
     response = aiClient.categorizeTransactions(
         transactions, overrideCategories=headers.custom_categories, custom_rules=headers.custom_rules)
     print(f"categorized transactions - Got: {len(response['categories'])}")
+    event_manager.notify(
+        'categorized-set', f"categorized transactions - Got: {len(response['categories'])}")
     processed = 0
 
     for cat in response['categories']:
-        db.set_transaction_category(t_id=cat['t_id'], category=cat['category'])
+        if len(cat) > 0:
+            status = 'complete'
+        else:
+            status = 'pending'
+
+        db.set_transaction_category(
+            t_id=cat['t_id'], category=cat['category'], status=status)
         print(
             f"set_transaction_category(t_id={cat['t_id']}, category={cat['category']})")
        # add_subscriber(ts_id, cat['t_id'], {
@@ -302,7 +336,7 @@ def index(ts_id: str, request: Request):
         processed = processed + 1
 
     return present_transactions(
-        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message="Done", done=False, expanded=expanded)
+        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message=f"Done {len(response['categories'])}", done=False, expanded=expanded)
 
     # templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit, "message": f"Processed {processed}", "done": False})
 

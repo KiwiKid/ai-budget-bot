@@ -21,6 +21,7 @@
     <script src="{{ url_for('static', path='js/htmx.min.js') }}"></script>
     <script src="{{ url_for('static', path='js/echart_ext.js') }}"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/debug.js"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       function formToJSON(form) {
@@ -103,7 +104,11 @@
                 class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white"
                 >AI Budget Bot</span
               >
+
             </a>
+            <div hx-ext="sse" sse-connect="/updates" sse-swap="message">
+              {{ message }}
+            </div>
           </div>
           <div class="flex items-center">
             <div class="flex items-center ml-3">

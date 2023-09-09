@@ -215,14 +215,16 @@ class DataManager:
 
         return result.fetchall()
 
-    def set_transaction_category(self, t_id, category):
+# TODO: save category_reason + add to model
+    def set_transaction_category(self, t_id, category, status):
         query = text('''
-            UPDATE transactions 
-            SET category = :category, status = 'complete' 
-            WHERE t_id = :t_id
+        UPDATE transactions 
+        SET category = :category,
+            status = :status
+        WHERE t_id = :t_id
         ''')
         result = self.conn.execute(
-            query, {'category': category,  't_id': t_id})
+            query, {'category': category,  't_id': t_id, 'status': status})
 
         self.conn.commit()
         return result.lastrowid
