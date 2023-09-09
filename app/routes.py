@@ -189,9 +189,17 @@ def index(request: Request):
 @router.get("/tsets")
 def index(request: Request):
     db = DataManager()
+    excludeFrame = request.query_params.get('excludeFrame', False) == 'true'
+    if (excludeFrame):
+        template = "tset/tsets_raw.html"
+    else:
+        template = "tset/tsets.html"
+
     existingTransactionSet = db.get_transaction_sets_by_session(
         userId)
-    return templates.TemplateResponse("tset/tsets.html", {"request": request, "sets": existingTransactionSet})
+    return templates.TemplateResponse(template, {
+        "request": request, "sets": existingTransactionSet, "excludeFrame": excludeFrame
+    })
 
 
 @router.get("/tset/{ts_id}")
@@ -259,7 +267,7 @@ def index(ts_id: str, request: Request):
     limit = int(request.query_params.get('limit', 50))
     expanded = request.query_params.get('expanded', False) == 'true'
 
-    aiBatchLimit = min(int(request.query_params.get('limit', 20)), 20)
+    aiBatchLimit = min(int(request.query_params.get('limit', 15)), 15)
     transactions = db.get_transactions_to_process(
         userId, ts_id, page, aiBatchLimit)
 

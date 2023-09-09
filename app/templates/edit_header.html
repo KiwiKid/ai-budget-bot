@@ -1,11 +1,13 @@
-<details id="edit-form">
+<details id="edit-form" class="m-10">
   <summary>EDIT CONFIG</summary>
+  <div class="w-5/6">
   <form
     id="update-form"
     hx-put="/api/tset/{{ts_id}}/headers"
     hx-headers='{"Content-Type": "application/json"}'
     hx-target="#edit-form"
     hx-swap="outerHTML"
+    
   >
     <!-- hx-before-send="javascript:handleBeforeSend"-->
     <h2 class="text-2xl font-bold mb-4">{{ message }}</h2>
@@ -20,7 +22,7 @@
         id="amount"
         required
         value="{{amount_head}}"
-        class="mt-1 p-2 border rounded-md w-full text-black"
+        class="mt-1 p-2 border rounded-md text-black"
       />
     </div>
 
@@ -34,7 +36,7 @@
         id="date"
         required
         value="{{date_head}}"
-        class="mt-1 p-2 border rounded-md w-full text-black"
+        class="mt-1 p-2 border rounded-md text-black"
       />
     </div>
 
@@ -46,7 +48,7 @@
       <input
         name="description[{{ loop.index0 }}]"
         value="{{desc}}"
-        class="mt-1 p-2 border rounded-md w-full mb-2 text-black"
+        class="mt-1 p-2 border rounded-md mb-2 text-black"
       />
       {% endfor %}
     </div>
@@ -59,7 +61,7 @@
         name="custom_rules"
         oninput="adjustHeight(this);"
         onclick="adjustHeight(this);"
-        class="mt-1 p-2 border rounded-md w-full text-black"
+        class="mt-1 p-2 border rounded-md text-black"
       ></textarea>
     </div>
 
@@ -81,23 +83,14 @@
       <input
         name="custom_categories[{{ loop.index0 }}]"
         value="{{cat}}"
-        class="mt-1 p-2 border rounded-md w-full mb-2 text-black"
+        class="mt-1 p-2 border rounded-md mb-2 text-black"
       />
       {% endfor %}
-    </div>
-
-    <div>
-      <label
-        for="custom_categories_new"
-        class="block text-sm font-medium text-gray-200"
-        >Add a new Category:</label
-      >
       <input
         name="custom_categories_new"
-        class="mt-1 p-2 border rounded-md w-full text-black"
+        class="mt-1 p-2 border rounded-md text-black"
       />
     </div>
-
     <input
       type="submit"
       value="Save"
@@ -123,4 +116,5 @@
     </div>
     <div style="height: 300px"></div>
   </form>
+  </div>
 </details>

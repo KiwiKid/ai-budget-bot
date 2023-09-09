@@ -20,6 +20,7 @@
     <script src="https://unpkg.com/echarts@5.4.3/dist/echarts.js.map"></script>
     <script src="{{ url_for('static', path='js/htmx.min.js') }}"></script>
     <script src="{{ url_for('static', path='js/echart_ext.js') }}"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/debug.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       function formToJSON(form) {
@@ -75,7 +76,7 @@
               data-drawer-toggle="sidebar"
               aria-controls="sidebar"
               type="button"
-              class="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+              class="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden \:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
             >
               <span class="sr-only">Open sidebar</span>
               <svg
@@ -100,7 +101,7 @@
               />
               <span
                 class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white"
-                >Flowbite</span
+                >AI Budget Bot</span
               >
             </a>
           </div>
@@ -176,15 +177,9 @@
         </div>
       </div>
     </nav>
-
-    <aside
-      hx-get="/sidebar"
-      hx-target="this"
-      hx-swap="outerHTML"
-      hx-trigger="load"
-    ></aside>
-
-    <div class="p-2">
+    {% if not expanded %}
+      {% include  "shared/sidebar_closed.html" %}
+  {% endif %}
       <div class="p-2 rounded-lg mt-10">
         <div
           class="flex items-center justify-center rounded bg-gray-50 dark:bg-gray-800"
@@ -193,7 +188,6 @@
           <h1>Hello, there!</h1>
           {% endblock %}
         </div>
-      </div>
     </div>
   </body>
 </html>

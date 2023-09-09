@@ -7,8 +7,21 @@ import pandas as pd
 from dotenv import load_dotenv, find_dotenv
 
 
-def pg_array_to_python_list(array_str):
-    return [item.strip('{}') for item in array_str.split(",")]
+def pg_array_to_python_list(array_str: str) -> list:
+    items = array_str.split(",")
+
+    cleaned_items = []
+    for item in items:
+        # Remove surrounding quotes if present
+        if item.startswith('"') and item.endswith('"'):
+            item = item[1:-1]
+
+        # Strip any surrounding curly braces
+        item = item.strip('{}')
+
+        cleaned_items.append(item)
+
+    return cleaned_items
 
 
 async def read_file(file: UploadFile) -> List[str]:

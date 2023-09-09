@@ -48,7 +48,7 @@ class OpenAIClient:
     def categorizeTransactions(self, transactions, overrideCategories, custom_rules):
         print(f"categorizeTransactions({len(transactions)})")
 
-        extracted_data = []
+        extracted_data = ['t_id, description, recipient, date, amount']
 
         for data in transactions:
             t_id = data[0]
@@ -59,19 +59,18 @@ class OpenAIClient:
 
         content = "\n".join(extracted_data)
 
-        print(f"openai.ChatCompletion({content})")
+        print(
+            f"openai.ChatCompletion:content\n({content})")
 
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-0613",
-            temperature=0,
-            messages=[{
-                "role": 'user',
-                "content": content,
-            }],
-            functions=[
-                {
-                    "name": "categories_headers",
-                    "description": "You job is to categorize a given transaction based on the following categories:" + "\n".join(overrideCategories) + f"\nconsider these rules: {custom_rules}",
+        if (len(custom_rules) > 0):
+            custom_rules_str = f"\nconsider these rules: {custom_rules}"
+        else:
+            custom_rules_str = ''
+
+        function = {
+            "name": "categories_headers",
+                    "description": "You job is to categorize a given transactions. Include why you chose that category\n\n" +
+            custom_rules_str,
                     "parameters": {
                         "type": 'object',
                         "properties": {
@@ -89,13 +88,30 @@ class OpenAIClient:
                                             "enum": overrideCategories,
                                             "description": "The category of this transaction"
                                         },
+                                        "category_reason": {
+                                            "type": "string",
+                                            "description": "Why this transaction is in this category"
+                                        }
                                     },
-                                    "required": ["ts_id", "category"],
+                                    "required": ["t_id", "category", "category_reason"],
                                 }
                             }
                         }
                     }
-                }
+        }
+
+        print(
+            f"openai.ChatCompletion:function:\n({json.dumps(function, indent=4)})")
+
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo-0613",
+            temperature=0,
+            messages=[{
+                "role": 'user',
+                "content": content,
+            }],
+            functions=[
+                function
             ],
             function_call='auto',
             max_tokens=1024
@@ -103,6 +119,7 @@ class OpenAIClient:
 
         result = json.loads(
             response.choices[0].message.function_call.arguments)
-        print(f"openai.ChatCompletion({result})")
+        print(
+            f"openai.ChatCompletion:function:\n({json.dumps(result, indent=4)})")
 
         return result
