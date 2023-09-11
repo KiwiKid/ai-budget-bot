@@ -1,0 +1,27 @@
+
+
+<canvas id="myChart"></canvas>
+I'm a chart
+<script>
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ labels|tojson|safe }},
+            datasets: [{
+                label: 'Amount',
+                data: {{ data|tojson|safe }},
+                backgroundColor: [
+                    // You can add colors here for each category
+                    'rgba(255, 99, 132, 0.2)',
+                    // ... add more colors
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    // ... add more colors
+                ],
+                borderWidth: 1
+            }]
+        }
+    });
+</script>

@@ -51,10 +51,11 @@ class OpenAIClient:
         extracted_data = ['t_id, description, recipient, date, amount']
 
         for data in transactions:
-            t_id = data[0]
-            description = data[4]
-            date = data[3]
-            amount = data[5]
+            print(f"data")
+            t_id = data.t_id
+            description = data.description
+            date = data.date
+            amount = data.amount
             extracted_data.append(f"{t_id}, {description}, {date}, {amount}")
 
         content = "\n".join(extracted_data)

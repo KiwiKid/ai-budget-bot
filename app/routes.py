@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import simplejson as json
 from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse, Response
-from app.utils import read_file, CustomJSONEncoder, flatten_form_data
+from app.utils import read_file, CustomJSONEncoder, flatten_form_data, transactions_to_chartjs
 from fastapi import APIRouter, Request, UploadFile, Form
 from jinja2_fragments.fastapi import Jinja2Blocks
 from jinja2 import Environment, FileSystemLoader
@@ -62,6 +62,25 @@ async def updates_endpoint(request: Request):
     return StreamingResponse(event_stream(eq), media_type="text/event-stream")
 
 
+@router.get('/tset/{ts_id}/chart/{type}')
+def index(ts_id: str, type: str, request: Request):
+    db = DataManager()
+    start_date = request.query_params.get('start_date', 'none')
+    end_date = request.query_params.get('end_date', 'none')
+
+    transactions = db.get_transactions(
+        userId, ts_id, 0, limit=10000, only_pending=False, negative_only=True, start_date=start_date, end_date=end_date)
+
+    if len(transactions) == 0:
+        return Response(status_code=400, content="No mode", media_type="application/text")
+
+    labels, data = transactions_to_chartjs(transactions)
+
+    return templates.TemplateResponse("tset/chart_raw.html", {
+        "request": request, "labels": labels, "data": data, "ts_id": ts_id
+    })
+
+
 def clean_description(description_parts, removals):
     cleaned_parts = []
 
@@ -76,19 +95,26 @@ def clean_description(description_parts, removals):
     return ' '.join(cleaned_parts).strip()
 
 
-def present_transactions(user_id: str, request, ts_id: str, page: int, limit: int, message: str, done, expanded):
+def present_transactions(user_id: str, request, ts_id: str, page: int, limit: int, message: str, done, expanded, start_date: str = 'none', end_date: str = 'none'):
     db = DataManager()
 
     transactions = db.get_transactions(
-        user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False)
+        user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False, start_date=start_date, end_date=end_date)
 
     transactions_stats = db.get_transaction_sets_by_session(
         user_id=user_id, ts_id=ts_id)
+
+    statics = db.get_transaction_set_stats(
+        user_id=user_id, ts_id=ts_id, grouping='week')
 
     print(
         f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
 
     transaction_dicts = [ts.to_dict() for ts in transactions_stats]
+
+    print("\n\n\n")
+    print(f"{json.dumps(transaction_dicts, indent=4)}")
+    print("\n\n\n")
 
     grandTotal = sum(ts['total']
                      for ts in transaction_dicts if 'total' in ts)
@@ -231,11 +257,13 @@ def index(ts_id: str, request: Request):
 
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
+    start_date = request.query_params.get('start_date', 'none')
+    end_date = request.query_params.get('end_date', 'none')
     expanded = request.query_params.get('expanded', False) == 'true'
 
     print(f"GET /tset/{ts_id}")
     return present_transactions(
-        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message='', done=False, expanded=expanded)
+        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message='', done=False, expanded=expanded, start_date=start_date, end_date=end_date)
 
 
 @router.delete("/tset/{ts_id}")
@@ -290,26 +318,28 @@ def index(ts_id: str, request: Request):
     db = DataManager()
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
+    start_date = request.query_params.get('start_date', 'none')
+    end_date = request.query_params.get('end_date', 'none')
     expanded = request.query_params.get('expanded', False) == 'true'
 
     aiBatchLimit = min(int(request.query_params.get('limit', 15)), 15)
-    transactions = db.get_transactions_to_process(
-        userId, ts_id, page, aiBatchLimit)
+    transactions = db.get_transactions(
+        userId, ts_id, page, limit=aiBatchLimit, only_pending=True, start_date=start_date, end_date=end_date)
 
     if not len(transactions) > 0:
         return present_transactions(
-            request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message="ALL PROCESSED", done=True, expanded=expanded)
+            request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message="None to process", done=True, expanded=expanded, start_date=start_date, end_date=end_date,)
 
     # for preT in transactions:
        # add_subscriber(preT[1], preT[0], {
        #     'event': 'start_category'
        # })
-    event_manager.notify('start-set', len(transactions))
+    event_manager.notify(
+        'start-set', f"{len(transactions)} rows processing")
     headers = db.get_header(user_id=userId, ts_id=ts_id)
 
     print(
         f"categorize transactions {len(transactions)} with overrideCategories {headers.custom_categories} and rules: {headers.custom_rules}")
-    event_manager.notify('loading-set', f"Loading...")
     response = aiClient.categorizeTransactions(
         transactions, overrideCategories=headers.custom_categories, custom_rules=headers.custom_rules)
     print(f"categorized transactions - Got: {len(response['categories'])}")
@@ -336,7 +366,7 @@ def index(ts_id: str, request: Request):
         processed = processed + 1
 
     return present_transactions(
-        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, message=f"Done {len(response['categories'])}", done=False, expanded=expanded)
+        request=request, user_id=userId, ts_id=ts_id, page=page, limit=limit, start_date=start_date, end_date=end_date, message=f"Done {len(response['categories'])}", done=False, expanded=expanded)
 
     # templates.TemplateResponse("tset/tres.html", {"request": request, "ts_id": ts_id, "transactions": transactions, "page": page, "limit": limit, "message": f"Processed {processed}", "done": False})
 
@@ -549,6 +579,8 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
 
     contents = await bank_csv.read()
     expanded = request.query_params.get('expanded', False) == 'true'
+    start_date = request.query_params.get('start_date', 'none')
+    end_date = request.query_params.get('end_date', 'none')
 
     df = pd.read_csv(io.BytesIO(contents))
 
@@ -614,7 +646,7 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
                                     date=date, description=description, status='pending')
         print(f"saved transaction {trans}")
 
-    return present_transactions(userId, request, ts_id=ts_id, page=0, limit=100, message='', done=False, expanded=expanded)
+    return present_transactions(userId, request, ts_id=ts_id, page=0, limit=100, message='', done=False, expanded=expanded, start_date=start_date, end_date=end_date)
 
 
 @router.get("/tset/{ts_id}/table")

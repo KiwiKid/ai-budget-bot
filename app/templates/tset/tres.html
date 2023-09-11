@@ -48,6 +48,12 @@
     {% endif %}
 </div>
 
+
+<div hx-get="/tset/{{ ts_id }}/chart/bar" hx-trigger="revealed" hx-target="#chartDiv" hx-indicator="#loadingIndicator" id="chartDiv">
+  <!-- Initial content or loading indicator here -->
+  Loading chart...
+</div>
+<span id="loadingIndicator" style="display: none;">Loading...</span>
     <div class="flex-grow px-8 py-6">
 
       <div hx-trigger="load" hx-get="{{header_form_url}}"></div>
@@ -60,9 +66,23 @@
         <thead>
           <tr>
             <th class="px-4 py-2 border-b text-left">Date</th>
-            <th class="px-4 py-2 border-b text-left">Description</th>
+            <th class="px-4 py-2 border-b text-left">Description</th>++
             <th class="px-4 py-2 border-b text-left">Amount</th>
-            <th class="px-4 py-2 border-b text-left">Category</th>
+            <th class="px-4 py-2 border-b text-left">Category       <button
+              hx-delete="/tset/{{ts_id}}/category"
+              hx-swap="none"
+              class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none"
+            >
+              Reset ALL
+            </button></th>
+            <th>                <button
+              hx-post="/tset/{{ts_id}}/categorize"
+              hx-swap="outerHTML"
+              hx-target="#mainContent"
+              class="bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700 focus:outline-none"
+            >
+              CATEGORIZE!
+            </button></th>
           </tr>
         </thead>
         <tbody>
@@ -79,18 +99,10 @@
                   class="ml-4 bg-yellow-500 text-white py-1 px-1 text-sm rounded hover:bg-yellow-600 focus:outline-none"
                 >
                   Reset Category
-                </button>
+                </button> 
               </div>
               {% else %}
               <div>
-                <button
-                  hx-post="/tset/{{ts_id}}/categorize"
-                  hx-swap="outerHTML"
-                  hx-target="#mainContent"
-                  class="bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700 focus:outline-none"
-                >
-                  CATEGORIZE!
-                </button>
             </div>
               {% endif %}
             </td>
@@ -131,6 +143,9 @@
     </div>
     </div>
   </div>
+
+
+  
 
   {{ response }} {% endblock %}
 </div>

@@ -3,9 +3,11 @@ import uuid
 
 
 class URLGenerator:
-    def __init__(self, expanded: bool, base_url="/"):
+    def __init__(self, expanded: bool, base_url="/", start_date: str = 'none', end_date: str = 'none'):
         self.base_url = base_url
         self.expanded = expanded
+        self.start_date = start_date
+        self.end_date = end_date
 
     def generate_url(self, page: int, limit: int) -> str:
         # Ensuring that the page and limit are integers and greater than zero.
@@ -19,7 +21,14 @@ class URLGenerator:
         # Converting the 'expanded' parameter to lowercase string representation of boolean
         expanded_str = str(self.expanded).lower()
 
-        return f"{self.base_url}?page={page}&limit={limit}&expanded={expanded_str}"
+        extraParams = ""
+        if self.start_date and self.start_date != 'none':
+            extraParams += f'&start_date={self.start_date}'
+
+        if self.end_date and self.end_date != 'none':
+            extraParams += f'&end_date={self.end_date}'
+
+        return f"{self.base_url}?page={page}&limit={limit}&expanded={expanded_str}{extraParams}"
 
     def generate_next(self, page, limit, total) -> str:
         page = page + 1

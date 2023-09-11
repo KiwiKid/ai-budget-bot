@@ -98,13 +98,6 @@
     />
     <div class="mt-10"></div>
     <div>
-      <button
-        hx-delete="/tset/{{ts_id}}/category"
-        hx-swap="none"
-        class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none"
-      >
-        Reset ALL Categories for this batch
-      </button>
       <div hx-target="#mainContent" hx-swap="outerHTML">
         <button
           hx-delete="/tset/{{ ts_id }}"

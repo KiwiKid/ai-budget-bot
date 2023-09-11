@@ -7,6 +7,27 @@ import pandas as pd
 from dotenv import load_dotenv, find_dotenv
 
 
+from collections import defaultdict
+
+
+def transactions_to_chartjs(transactions):
+    # Initialize a dictionary with 0 for each category
+    data_dict = defaultdict(float)
+    for tran in transactions:
+        # Use dot notation instead of square bracket notation
+        if not tran.category:
+            cat = 'Uncategorized'
+        else:
+            cat = tran.category
+        data_dict[cat] += float(tran.amount)
+
+    # Separate data into labels and data for ChartJS
+    labels = list(data_dict.keys())
+    data = list(data_dict.values())
+
+    return labels, data
+
+
 def pg_array_to_python_list(array_str: str) -> list:
     items = array_str.split(",")
 

@@ -132,40 +132,62 @@ class DataManager:
             return Header(ts_id=row[0], user_id=row[1], amount_head=row[2], date_head=row[3], description_head=row[4],
                           created_at=row[5], custom_rules=row[6], custom_categories=row[7])
 
-    def get_transactions(self, user_id: str, ts_id: str, page: int, limit: int, negative_only: bool) -> List[Transaction]:
+    def get_transactions(
+        self, user_id: str, ts_id: str, page: int, limit: int, negative_only: bool = False, only_pending: bool = False, start_date: Optional[str] = None, end_date: Optional[str] = None
+    ) -> List[Transaction]:
         offset = page * limit
 
+        query_params = {'user_id': user_id, 'ts_id': ts_id,
+                        'limit': limit, 'offset': offset}
+
+        where_clauses = ["user_id = :user_id", "ts_id = :ts_id"]
         if negative_only:
-            query = text('''
-                SELECT * FROM transactions 
-                WHERE user_id = :user_id AND ts_id = :ts_id AND amount < 0 
-                LIMIT :limit OFFSET :offset
-            ''')
-            result = self.conn.execute(
-                query, {'user_id': user_id, 'ts_id': ts_id, 'limit': limit, 'offset': offset})
-        else:
-            query = text('''
-                SELECT
-                    t_id,
-                    ts_id,
-                    user_id,
-                    date,
-                    description,
-                    amount,
-                    status,
-                    created_at,
-                    category
-                FROM transactions 
-                WHERE user_id = :user_id AND ts_id = :ts_id 
-                LIMIT :limit OFFSET :offset
-            ''')
-            result = self.conn.execute(
-                query, {'ts_id': ts_id, 'limit': limit, 'offset': offset, 'user_id': user_id, })
+            where_clauses.append("amount < 0")
+
+        if only_pending:
+            where_clauses.append("status = 'pending'")
+
+        if start_date and start_date != 'none':
+            where_clauses.append("date >= :start_date")
+            query_params['start_date'] = start_date
+
+        if end_date and end_date != 'none':
+            where_clauses.append("date <= :end_date")
+            query_params['end_date'] = end_date
+
+        query_string = '''
+            SELECT
+                t_id,
+                ts_id,
+                user_id,
+                date,
+                description,
+                amount,
+                status,
+                created_at,
+                category
+            FROM transactions 
+            WHERE {} 
+            ORDER BY status ASC, created_at
+            LIMIT :limit OFFSET :offset
+        '''.format(" AND ".join(where_clauses))
+
+        query = text(query_string)
+
+        result = self.conn.execute(query, query_params)
 
         # Assuming the rows come in as a list of dictionaries
         raw = result.fetchall()
-        res = [Transaction(row[0], row[1], row[2], row[3],
-                           row[4], row[5], row[6], row[7], row[8]) for row in raw]
+
+        res = []
+
+        for row in raw:
+            if negative_only:
+                amount = row[5] * -1
+            else:
+                amount = row[5]
+            res.append(Transaction(row[0], row[1], row[2], row[3],
+                                   row[4], amount, row[6], row[7], row[8]))
 
         return res
 
@@ -197,23 +219,23 @@ class DataManager:
 
         return res
 
-    def get_transactions_to_process(self, user_id, ts_id, page, limit):
-        """Returns transactions filtered by a given id + user_id."""
-        print(f"get_transactions_to_process(self, {user_id}, {ts_id})")
+   # ef get_transactions_to_process(self, user_id, ts_id, page, limit):
+   #   """Returns transactions filtered by a given id + user_id."""
+   #   print(f"get_transactions_to_process(self, {user_id}, {ts_id})")
 
-        offset = page * limit
-        query = text('''
-            SELECT * FROM transactions 
-            WHERE user_id = :user_id AND ts_id = :ts_id AND status = 'pending' 
-            LIMIT :limit OFFSET :offset
-        ''')
-        result = self.conn.execute(
-            query, {'user_id': user_id, 'ts_id': ts_id, 'limit': limit, 'offset': offset})
+   #   offset = page * limit
+   #   query = text('''
+   #       SELECT * FROM transactions
+   #       WHERE user_id = :user_id AND ts_id = :ts_id AND status = 'pending'
+   #       LIMIT :limit OFFSET :offset
+   #   ''')
+   #   result = self.conn.execute(
+   #       query, {'user_id': user_id, 'ts_id': ts_id, 'limit': limit, 'offset': offset})
 
-        print(
-            f"get_transactions_to_process - Got {result.rowcount} to process for ts_id :{ts_id}")
+   #   print(
+   #       f"get_transactions_to_process - Got {result.rowcount} to process for ts_id :{ts_id}")
 
-        return result.fetchall()
+   #   return result.fetchall()
 
 # TODO: save category_reason + add to model
     def set_transaction_category(self, t_id, category, status):
@@ -266,17 +288,17 @@ class DataManager:
 
         if grouping == 'week':
             query = text('''
-                SELECT WEEK(date) as week, COUNT(*) as num_transactions, SUM(amount) as total_amount 
+                SELECT EXTRACT(WEEK FROM date) as week, COUNT(*) as num_transactions, SUM(amount) as total_amount 
                 FROM transactions 
                 WHERE user_id = :user_id AND ts_id = :ts_id
-                GROUP BY WEEK(date)
+                GROUP BY EXTRACT(WEEK FROM date)
             ''')
         elif grouping == 'month':
             query = text('''
-                SELECT MONTH(date) as month, COUNT(*) as num_transactions, SUM(amount) as total_amount 
+                SELECT EXTRACT(MONTH FROM date) as month, COUNT(*) as num_transactions, SUM(amount) as total_amount 
                 FROM transactions 
                 WHERE user_id = :user_id AND ts_id = :ts_id
-                GROUP BY MONTH(date)
+                GROUP BY EXTRACT(MONTH FROM date)
             ''')
         # Add more grouping options as necessary
         else:
