@@ -284,6 +284,16 @@ class DataManager:
         result = self.conn.execute(query, {'user_id': user_id, 't_id': t_id})
         return result.fetchall()
 
+    def get_transaction_set_by_status(self, user_id, ts_id):
+        """Returns transactions filtered by a given user_id and transaction id."""
+        query = text('''
+            SELECT COUNT(*), status FROM transactions 
+            WHERE ts_id = :ts_id
+            GROUP BY status
+        ''')
+        result = self.conn.execute(query, {'user_id': user_id, 'ts_id': ts_id})
+        return result.fetchall()
+
     def get_transaction_set_stats(self, user_id, ts_id, grouping):
 
         if grouping == 'week':

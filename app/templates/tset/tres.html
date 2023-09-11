@@ -1,4 +1,9 @@
 {% extends "/shared/_base.html" %} {% block content %}
+
+
+
+{% set pendingCount = stats | selectattr("status", "equalto", 'pending') | list %}
+
 <div id="mainContent">
   <div>
     grand_total: ${{grand_total}}
@@ -9,6 +14,7 @@
     {% for stat in stats %}
     <li>
       {{stat.count}} rows
+      {{stat.status}}
     </li>
     {% endfor %}
   </ul>
@@ -65,7 +71,7 @@
         <thead>
           <tr>
             <th class="px-4 py-2 border-b text-left">Date</th>
-            <th class="px-4 py-2 border-b text-left">Description</th>++
+            <th class="px-4 py-2 border-b text-left">Description</th>
             <th class="px-4 py-2 border-b text-left">Amount</th>
             <th class="px-4 py-2 border-b text-left">Category       <button
               hx-delete="/tset/{{ts_id}}/category"
@@ -80,7 +86,7 @@
               hx-target="#mainContent"
               class="bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700 focus:outline-none"
             >
-              CATEGORIZE!
+              CATEGORIZE ({{pendingCount}})
             </button></th>
           </tr>
         </thead>
@@ -104,6 +110,9 @@
               <div>
             </div>
               {% endif %}
+            </td>
+            <td>
+              {{ transaction.status }}
             </td>
             
           </tr>

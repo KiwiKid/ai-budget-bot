@@ -108,7 +108,7 @@
 
             </a>
             <div hx-ext="sse" sse-connect="/updates" sse-swap="message">
-              {{ message }}
+              <h1>{{ message.message | safe }}
             </div>
           </div>
           <div class="flex items-center">

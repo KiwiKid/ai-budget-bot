@@ -101,29 +101,36 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
     transactions = db.get_transactions(
         user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False, start_date=start_date, end_date=end_date)
 
-    transactions_stats = db.get_transaction_sets_by_session(
-        user_id=user_id, ts_id=ts_id)
+  #  transactions_stats = db.get_transaction_sets_by_session(
+  #      user_id=user_id, ts_id=ts_id)
 
-    statics = db.get_transaction_set_stats(
-        user_id=user_id, ts_id=ts_id, grouping='week')
+  # status_groups = db.get_transaction_set_by_status(
+  #     user_id=user_id, ts_id=ts_id)
+
+    pendingItems = [item for item in transactions if item.status == 'pending']
+    completedItems = [
+        item for item in transactions if item.status == 'pending']
+
+    pendingCount = pendingItems[0].count if pendingItems else 0
+    completedItems = completedItems[0].count if completedItems else 0
 
     print(
         f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
 
-    transaction_dicts = [ts.to_dict() for ts in transactions_stats]
+  # transaction_dicts = [ts.to_dict() for ts in transactions_stats]
 
-    print("\n\n\n")
-    print(f"{json.dumps(transaction_dicts, indent=4)}")
-    print("\n\n\n")
+  # print("\n\n\n")
+  # print(f"{json.dumps(transaction_dicts, indent=4)}")
+  # print("\n\n\n")
 
-    grandTotal = sum(ts['total']
-                     for ts in transaction_dicts if 'total' in ts)
+  # grandTotal = sum(ts['total']
+  #                  for ts in transaction_dicts if 'total' in ts)
 
-    total_rows = sum(ts['count']
-                     for ts in transaction_dicts if 'count' in ts)
-
+  # total_rows = sum(ts['count']
+  #                  for ts in transaction_dicts if 'count' in ts)
+    total_rows = len(transactions)
     urlGen = URLGenerator(
-        base_url=f'/tset/{ ts_id }', expanded=expanded, page=page, limit=limit)
+        base_url=f'/tset/{ ts_id }', expanded=expanded, page=page, limit=limit, start_date=start_date, end_date=end_date)
 
    # $3 eariest_date =
    # $3 latest_date =
@@ -136,8 +143,9 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
                                        "limit": limit,
                                        "message": message,
                                        "done": done,
-                                       "stats": transaction_dicts,
-                                       "grand_total": grandTotal,
+                                       "pending_count": pendingCount,
+                                       "completed_count": completedItems,
+                                       "grand_total": 'na',
                                        "expanded": expanded,
                                        "bar_chart_url": urlGen.generate_chart_url(type="bar"),
                                        "next_page": urlGen.generate_next(total_rows),
