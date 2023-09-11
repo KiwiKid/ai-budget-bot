@@ -122,7 +122,8 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
     total_rows = sum(ts['count']
                      for ts in transaction_dicts if 'count' in ts)
 
-    urlGen = URLGenerator(base_url=f'/tset/{ ts_id }', expanded=expanded)
+    urlGen = URLGenerator(
+        base_url=f'/tset/{ ts_id }', expanded=expanded, page=page, limit=limit)
 
    # $3 eariest_date =
    # $3 latest_date =
@@ -138,8 +139,9 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
                                        "stats": transaction_dicts,
                                        "grand_total": grandTotal,
                                        "expanded": expanded,
-                                       "next_page": urlGen.generate_next(page, limit, total_rows),
-                                       "prev_page": urlGen.generate_prev(page, limit),
+                                       "bar_chart_url": urlGen.generate_chart_url(type="bar"),
+                                       "next_page": urlGen.generate_next(total_rows),
+                                       "prev_page": urlGen.generate_prev(),
                                        'header_form_url': urlGen.generate_headers_url(ts_id=ts_id),
                                        "debug": False
                                        })

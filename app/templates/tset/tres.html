@@ -48,8 +48,7 @@
     {% endif %}
 </div>
 
-
-<div hx-get="/tset/{{ ts_id }}/chart/bar" hx-trigger="revealed" hx-target="#chartDiv" hx-indicator="#loadingIndicator" id="chartDiv">
+<div hx-get="{{bar_chart_url}}" hx-trigger="revealed" hx-target="#chartDiv" hx-indicator="#loadingIndicator" id="chartDiv">
   <!-- Initial content or loading indicator here -->
   Loading chart...
 </div>

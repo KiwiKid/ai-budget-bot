@@ -3,13 +3,15 @@ import uuid
 
 
 class URLGenerator:
-    def __init__(self, expanded: bool, base_url="/", start_date: str = 'none', end_date: str = 'none'):
-        self.base_url = base_url
+    def __init__(self, expanded: bool, base_url="/", start_date: str = 'none', end_date: str = 'none', page=0, limit=9999):
         self.expanded = expanded
+        self.base_url = base_url
         self.start_date = start_date
         self.end_date = end_date
+        self.page = page
+        self.limit = limit
 
-    def generate_url(self, page: int, limit: int) -> str:
+    def generate_url(self, page: int, limit: int, urlPart: str = "") -> str:
         # Ensuring that the page and limit are integers and greater than zero.
         try:
             page = max(0, int(page))
@@ -28,22 +30,25 @@ class URLGenerator:
         if self.end_date and self.end_date != 'none':
             extraParams += f'&end_date={self.end_date}'
 
-        return f"{self.base_url}?page={page}&limit={limit}&expanded={expanded_str}{extraParams}"
+        return f"{self.base_url}{urlPart}?page={page}&limit={limit}&expanded={expanded_str}{extraParams}"
 
-    def generate_next(self, page, limit, total) -> str:
-        page = page + 1
+    def generate_chart_url(self, type: str) -> str:
+        return self.generate_url(page=0, limit=999, urlPart=f"/chart/{type}")
 
-        if page * limit > total:
+    def generate_next(self, total) -> str:
+        page = self.page + 1
+
+        if page * self.limit > total:
             return ''
 
-        return self.generate_url(page, limit)
+        return self.generate_url(page=page, limit=self.limit)
 
-    def generate_prev(self, page, limit) -> str:
-        page = page - 1
+    def generate_prev(self) -> str:
+        page = self.page - 1
 
         if (page < 0):
             return ''
-        return self.generate_url(page, limit)
+        return self.generate_url(page=page, limit=self.limit)
 
     def generate_upload_url(self, ts_id: Optional[str] = None) -> str:
 
