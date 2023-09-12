@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     amount decimal NOT NULL,
     status transaction_status NOT NULL,
     category TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 );
 
 
@@ -25,3 +25,6 @@ CREATE TABLE IF NOT EXISTS headers (
     custom_rules TEXT[] NULL,
     custom_categories TEXT[] NULL
 );
+
+ALTER TABLE transactions ADD COLUMN categorization_attempt int DEFAULT 0;
+

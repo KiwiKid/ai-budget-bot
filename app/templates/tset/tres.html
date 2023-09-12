@@ -1,13 +1,13 @@
-{% extends "/shared/_base.html" %} {% block content %}
+{% extends "/shared/_base.html" %} 
 
-
+{% block content %}
 
 {% set pendingCount = stats | selectattr("status", "equalto", 'pending') | list %}
 
 <div id="mainContent">
   <div>
     Grand Total: ${{grand_total}}
-    Transactions: {{ total_count }} ({{pending_count}} pending)
+    Transactions: {{ total_count }}
   </div>
   <div>
     <ul>
@@ -20,52 +20,21 @@
   </ul>
     
   </div>
-  <div class="flex justify-between items-center mt-4">
-    {% if prev_page|length > 0 %}
-    <a
-        href="{{prev_page}}"
-        class="text-blue-200 underline"
-    >
-        &lt; &lt; &lt; &lt; Previous Page
-    </a>
-    {% endif %}
 
-    <div>
-        {% if done %}
-        <div class="text-lg font-semibold">ALL COMPLETE</div>
-        {% endif %} 
-        <div class="text-lg font-bold">Page: {{page + 1 }} Limit: {{limit}}
-          <a href="/tset/{{ts_id}}/upload" class="text-blue-600 hover:underline"
-            >(add new)</a
-          ></div>
-          <div>
-            [{{ page * limit }} - {{ (page +1) * limit}}]
-          </div>
-    </div>
-
-
-    {% if next_page|length > 0 %}
-    <a
-        href="{{next_page}}"
-        class="text-blue-200 underline"
-    >
-        Next Page &gt; &gt; &gt; &gt;
-    </a>
-    {% endif %}
-</div>
 
 <div hx-get="{{bar_chart_url}}" hx-trigger="revealed" hx-target="#chartDiv" hx-indicator="#loadingIndicator" id="chartDiv">
   <!-- Initial content or loading indicator here -->
   Loading chart...
 </div>
 <span id="loadingIndicator" style="display: none;">Loading...</span>
+
+
+<div hx-trigger="load" hx-get="{{header_form_url}}"></div>
+
     <div class="flex-grow px-8 py-6">
 
-      <div hx-trigger="load" hx-get="{{header_form_url}}"></div>
-      <!-- Add your charts here when ready
-    <div class="mb-6" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=1"></div>
-    <div class="mb-6" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=2"></div>
-    -->
+
+      {% include  "shared/pagination.html" %}
 
       <table class="min-w-full border border-gray-300 rounded-md">
         <thead>
@@ -73,21 +42,22 @@
             <th class="px-4 py-2 border-b text-left">Date</th>
             <th class="px-4 py-2 border-b text-left">Description</th>
             <th class="px-4 py-2 border-b text-left">Amount</th>
-            <th class="px-4 py-2 border-b text-left">Category       <button
-              hx-delete="/tset/{{ts_id}}/category"
-              hx-swap="none"
-              class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none"
-            >
-              Reset ALL
-            </button></th>
-            <th>                <button
+            <th class="px-4 py-2 border-b text-left">Category</th>
+            <th><button
               hx-post="/tset/{{ts_id}}/categorize"
               hx-swap="outerHTML"
               hx-target="#mainContent"
               class="bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700 focus:outline-none"
             >
-              CATEGORIZE <br/>  ({{pending_count}} left)
-            </button></th>
+              CATEGORIZE <br/>  ({{completed_count}}/{{pending_count}} left)
+            </button>
+            <button
+            hx-delete="/tset/{{ts_id}}/category"
+            hx-swap="none"
+            class="bg-red-600 text-white py-1 px-3 rounded hover:bg-red-700 focus:outline-none"
+          >
+            Reset ALL
+          </button></th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -102,7 +72,7 @@
               {% endif %}
             </td>
             <td>
-              {{ transaction.status }}
+              {{ transaction.status }} {% if transaction.categorization_attempt > 0 %} {{ transaction.categorization_attempt }} {% endif %}
             </td>
             <td>
               <button
@@ -118,42 +88,13 @@
           {% endfor %}
         </tbody>
       </table>
-      <div class="flex justify-between items-center mt-4">
-        {% if page > 0 %}
-        <a
-            href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
-            class="text-blue-200 underline"
-        >
-            &lt; &lt; &lt; &lt; Previous Page
-        </a>
-        {% else %}
-        <div></div>
-        {% endif %}
-    
-        <div>
-            {% if done %}
-            <div class="text-lg font-semibold">ALL COMPLETE</div>
-            {% endif %}
-            <h3 class="text-lg font-bold">Page: {{page + 1}} Limit: {{limit}} {{total}}</h3>
-        </div>
-    
-        {% if not last_page %}
-        <a
-            href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
-            class="text-blue-200 underline"
-        >
-            Next Page &gt; &gt; &gt; &gt;
-        </a>
-        {% else %}
-        <div></div>
-        {% endif %}
-    </div>
-    </div>
+
+{% include  "shared/pagination.html" %}
   </div>
-
-
-  
-
-  {{ response }} {% endblock %}
 </div>
+
+
+ {% endblock %}
+</div>
+
 </div>

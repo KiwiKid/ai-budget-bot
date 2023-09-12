@@ -1,0 +1,47 @@
+<div>
+      <div class="flex-grow px-8 py-6">
+  
+        <!-- Add your charts here when ready
+      <div class="mb-6" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=1"></div>
+      <div class="mb-6" hx-ext="echarts" hx-trigger="load" hx-get="/tset/{{ ts_id }}/chart?mode=2"></div>
+      -->
+  
+        
+        <div class="flex justify-between items-center mt-4">
+          {% if page > 0 %}
+          <a
+              href="/tset/{{ ts_id }}?page={{ page - 1 }}&limit={{ limit }}"
+              class="text-blue-200 underline"
+          >
+              &lt; &lt; &lt; &lt; Previous Page
+          </a>
+          {% else %}
+          <div></div>
+          {% endif %}
+      
+          <div>
+              {% if done %}
+              <div class="text-lg font-semibold">ALL COMPLETE</div>
+              {% endif %}
+              <h3 class="text-lg font-bold">Page: {{page + 1}} Limit: {{limit}} {{total}}</h3>
+          </div>
+  
+          {% if not last_page %}
+          <a
+              href="/tset/{{ ts_id }}?page={{ page + 1 }}&limit={{ limit }}"
+              class="text-blue-200 underline"
+          >
+              Next Page &gt; &gt; &gt; &gt;
+          </a>
+          {% else %}
+          <div></div>
+          {% endif %}
+  
+      </div>
+    </div>
+    <div>
+      {% for month in month_buttons %}
+        <a href={{month.url}}>{{month.label}}</a>
+      {% endfor %}
+    </div>
+  </div>

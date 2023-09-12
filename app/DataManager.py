@@ -2,8 +2,7 @@ from sqlalchemy import create_engine, text
 import os
 from datetime import datetime
 from dateutil.parser import parse
-import json
-import uuid
+
 from app.Header import Header
 from app.transaction import Transaction
 from typing import List, Tuple, Optional, NamedTuple, Dict, Any
@@ -136,9 +135,9 @@ class DataManager:
         self, user_id: str, ts_id: str, page: int, limit: int, negative_only: bool = False, only_pending: bool = False, start_date: Optional[str] = None, end_date: Optional[str] = None
     ) -> List[Transaction]:
         offset = page * limit
+        includePageOffset = True
 
-        query_params = {'user_id': user_id, 'ts_id': ts_id,
-                        'limit': limit, 'offset': offset}
+        query_params = {'user_id': user_id, 'ts_id': ts_id}
 
         where_clauses = ["user_id = :user_id", "ts_id = :ts_id"]
         if negative_only:
@@ -150,10 +149,19 @@ class DataManager:
         if start_date and start_date != 'none':
             where_clauses.append("date >= :start_date")
             query_params['start_date'] = start_date
+            includePageOffset = False
 
         if end_date and end_date != 'none':
             where_clauses.append("date <= :end_date")
             query_params['end_date'] = end_date
+            includePageOffset = False
+
+        if includePageOffset:
+            postFix = "LIMIT :limit OFFSET :offset"
+            query_params['limit'] = limit
+            query_params['offset'] = offset
+        else:
+            postFix = ""
 
         query_string = '''
             SELECT
@@ -169,8 +177,7 @@ class DataManager:
             FROM transactions 
             WHERE {} 
             ORDER BY status ASC, created_at
-            LIMIT :limit OFFSET :offset
-        '''.format(" AND ".join(where_clauses))
+        '''.format(" AND ".join(where_clauses)) + postFix
 
         query = text(query_string)
 
@@ -242,7 +249,8 @@ class DataManager:
         query = text('''
         UPDATE transactions 
         SET category = :category,
-            status = :status
+            status = :status,
+            categorization_attempt = categorization_attempt + 1
         WHERE t_id = :t_id
         ''')
         result = self.conn.execute(
@@ -316,28 +324,6 @@ class DataManager:
 
         result = self.conn.execute(query, {'user_id': user_id, 'ts_id': ts_id})
         return result.fetchall()
-
- #   def get_transaction_sets_by_session(self, user_id: int, ts_id: Optional[UUID] = None) -> List[Tuple[UUID, int, datetime]]:
- #       """Returns transactions filtered by a given user_id and optionally by ts_id."""
- #       query_str = '''
- #           SELECT ts_id, status, COUNT(*), MIN(created_at) AS earliest_created_at
- #           FROM transactions
- #           WHERE user_id = :user_id
- #       '''
-#
- #       # Add ts_id filtering if provided
- #       if ts_id is not None:
- #           query_str += ' AND ts_id = :ts_id'
-#
- #       query_str += ' GROUP BY ts_id, status'
-#
- #       params = {'user_id': user_id}
- #       if ts_id:
- #           params['ts_id'] = ts_id
-#
- #       query = text(query_str)
- #       result = self.conn.execute(query, params)
- #       return result.fetchall()
 
     def delete_transaction_set(self, ts_id):
         query = text('''

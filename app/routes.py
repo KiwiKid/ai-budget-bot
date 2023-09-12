@@ -65,8 +65,18 @@ async def updates_endpoint(request: Request):
 @router.get('/tset/{ts_id}/chart/{type}')
 def index(ts_id: str, type: str, request: Request):
     db = DataManager()
-    start_date = request.query_params.get('start_date', 'none')
-    end_date = request.query_params.get('end_date', 'none')
+    start_date_str = request.query_params.get('start_date', 'none')
+    end_date_str = request.query_params.get('end_date', 'none')
+
+    if start_date_str != 'none':
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+    else:
+        start_date = 'none'
+
+    if end_date_str != 'none':
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+    else:
+        end_date = 'none'
 
     transactions = db.get_transactions(
         userId, ts_id, 0, limit=10000, only_pending=False, negative_only=True, start_date=start_date, end_date=end_date)
@@ -97,7 +107,7 @@ def clean_description(description_parts, removals):
 
 def present_transactions(user_id: str, request, ts_id: str, page: int, limit: int, message: str, done, expanded, start_date: str = 'none', end_date: str = 'none'):
     db = DataManager()
-
+    print("present_transactions")
     transactions = db.get_transactions(
         user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False, start_date=start_date, end_date=end_date)
 
@@ -109,26 +119,29 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
 
     pendingItems = [item for item in status_groups if item.status == 'pending']
     completedItems = [
-        item for item in status_groups if item.status == 'pending']
-
-    pendingCount = pendingItems[0].count if pendingItems and len(
+        item for item in status_groups if item.status == 'complete']
+    print(f"{pendingItems}")
+    pendingCount: int = pendingItems[0].count if pendingItems and len(
         pendingItems) > 0 else 0
-    completedCount = completedItems[0].count if completedItems and len(
+    completedCount: int = completedItems[0].count if completedItems and len(
         completedItems) > 0 else 0
-
-    if transactions:
-        min_date = min([transaction.date for transaction in transactions])
-        max_date = max([transaction.date for transaction in transactions])
-    else:
-        min_date = None
-        max_date = None
-
-    print(
-        f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
 
     total_rows: int = pendingCount + completedCount
     urlGen = URLGenerator(
-        base_url=f'/tset/{ ts_id }', expanded=expanded, page=page, limit=limit, start_date=start_date, end_date=end_date)
+        base_url=f'/tset/{ ts_id }', expanded=expanded, page=page, limit=limit)
+
+    print(f"{pendingCount}")
+    if transactions:
+        min_date = min([transaction.date for transaction in transactions])
+        max_date = max([transaction.date for transaction in transactions])
+        month_buttons = urlGen.generate_month_button_array(min_date, max_date)
+    else:
+        min_date = None
+        max_date = None
+        month_buttons = []
+
+    print(
+        f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
 
    # $3 eariest_date =
    # $3 latest_date =
@@ -137,6 +150,7 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
                                       {"request": request,
                                        "ts_id": ts_id,
                                        "transactions": transactions,
+                                       "month_buttons": month_buttons,
                                        "page": page,
                                        "limit": limit,
                                        "message": message,
@@ -366,8 +380,6 @@ def index(ts_id: str, request: Request):
 
         db.set_transaction_category(
             t_id=cat['t_id'], category=cat['category'], status=status)
-        print(
-            f"set_transaction_category(t_id={cat['t_id']}, category={cat['category']})")
        # add_subscriber(ts_id, cat['t_id'], {
        #     'event': 'new_category',
        #     "data": {

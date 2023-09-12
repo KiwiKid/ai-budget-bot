@@ -1,13 +1,14 @@
 from typing import Optional
 import uuid
+from calendar import monthrange
+from datetime import datetime
+from typing import List, Tuple, Optional, NamedTuple, Dict, Any
 
 
 class URLGenerator:
-    def __init__(self, expanded: bool, base_url="/", start_date: str = 'none', end_date: str = 'none', page=0, limit=9999):
+    def __init__(self, expanded: bool, base_url="/", page=0, limit=9999):
         self.expanded = expanded
         self.base_url = base_url
-        self.start_date = start_date
-        self.end_date = end_date
         self.page = page
         self.limit = limit
 
@@ -23,14 +24,22 @@ class URLGenerator:
         # Converting the 'expanded' parameter to lowercase string representation of boolean
         expanded_str = str(self.expanded).lower()
 
+        return f"{self.base_url}{urlPart}?page={page}&limit={limit}&expanded={expanded_str}"
+
+    def generate_date_url(self, start_date, end_date, urlPart: str = "") -> str:
+        expanded_str = str(self.expanded).lower()
         extraParams = ""
-        if self.start_date and self.start_date != 'none':
-            extraParams += f'&start_date={self.start_date}'
+        if start_date and start_date != 'none':
+            last_day_of_month = monthrange(
+                start_date.year, start_date.month)[1]
+            month_start_str = start_date.strftime('%Y-%m-%d')
+            extraParams += f'&start_date={month_start_str}'
 
-        if self.end_date and self.end_date != 'none':
-            extraParams += f'&end_date={self.end_date}'
-
-        return f"{self.base_url}{urlPart}?page={page}&limit={limit}&expanded={expanded_str}{extraParams}"
+        if end_date and end_date != 'none':
+            month_end_str = start_date.replace(
+                day=last_day_of_month).strftime('%Y-%m-%d')
+            extraParams += f'&end_date={month_end_str}'
+        return f"{self.base_url}{urlPart}?expanded={expanded_str}{extraParams}"
 
     def generate_chart_url(self, type: str) -> str:
         return self.generate_url(page=0, limit=999, urlPart=f"/chart/{type}")
@@ -78,3 +87,40 @@ class URLGenerator:
         expanded_str = str(self.expanded).lower()
 
         return f"/api/tset/{ts_id}/headers?expanded={expanded_str}"
+
+    def generate_month_button_array(self, min_date: str, max_date: str) -> List[Dict[str, str]]:
+        """
+        Generate an array of label/urls for every month between min_date and max_date.
+        Assumes min_date and max_date are in 'YYYY-MM-DD' format.
+        """
+
+        # Parsing the provided dates
+        start_date = min_date
+        end_date = max_date
+
+        months = []
+
+        # Iterate through each month between start_date and end_date
+        while start_date <= end_date:
+
+            # Forming the URL for the specific month
+            url = self.generate_date_url(
+                start_date=start_date, end_date=end_date)
+           # url += f"&start_date={month_start_str}&end_date={month_end_str}"
+            print(url)
+            # Adding the month label and URL to the list
+            month_label = start_date.strftime('%B %Y')
+            months.append({
+                "label": month_label,
+                "url": url
+            })
+
+            # Moving to the next month
+            if start_date.month == 12:
+                start_date = start_date.replace(
+                    year=start_date.year+1, month=1, day=1)
+            else:
+                start_date = start_date.replace(
+                    month=start_date.month+1, day=1)
+
+        return months
