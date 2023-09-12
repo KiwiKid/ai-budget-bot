@@ -131,6 +131,8 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
         base_url=f'/tset/{ ts_id }', expanded=expanded, page=page, limit=limit)
 
     print(f"{pendingCount}")
+
+    TODO: make this based on the ts_id dates (not this results sets dates)
     if transactions:
         min_date = min([transaction.date for transaction in transactions])
         max_date = max([transaction.date for transaction in transactions])
