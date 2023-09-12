@@ -6,8 +6,8 @@
 
 <div id="mainContent">
   <div>
-    grand_total: ${{grand_total}}
-    
+    Grand Total: ${{grand_total}}
+    Transactions: {{ total_count }} ({{pending_count}} pending)
   </div>
   <div>
     <ul>
@@ -86,8 +86,9 @@
               hx-target="#mainContent"
               class="bg-blue-600 text-white py-1 px-3 rounded hover:bg-blue-700 focus:outline-none"
             >
-              CATEGORIZE ({{pendingCount}})
+              CATEGORIZE <br/>  ({{pending_count}} left)
             </button></th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -97,22 +98,20 @@
             <td class="px-4 py-2 border-b text-left">{{ transaction.description }}</td>
             <td class="px-4 py-2 border-b text-left">{{ transaction.amount }}</td>
             <td class="px-4 py-2 border-b text-left">
-                {% if transaction.category %} <div>{{ transaction.category }}
-                <button
-                  hx-delete="/tset/{{transaction.ts_id}}/t_id/{{transaction.t_id}}/category"
-                  hx-swap="none"
-                  class="ml-4 bg-yellow-500 text-white py-1 px-1 text-sm rounded hover:bg-yellow-600 focus:outline-none"
-                >
-                  Reset Category
-                </button> 
-              </div>
-              {% else %}
-              <div>
-            </div>
+                {% if transaction.category %} <div>{{ transaction.category }}</div>
               {% endif %}
             </td>
             <td>
               {{ transaction.status }}
+            </td>
+            <td>
+              <button
+                  hx-delete="/tset/{{transaction.ts_id}}/t_id/{{transaction.t_id}}/category"
+                  hx-swap="none"
+                  class="ml-4 bg-yellow-500 text-white py-1 px-1 text-sm rounded hover:bg-yellow-600 focus:outline-none"
+                >
+                  Reset {% if transaction.category %} Category {% endif %}
+                </button> 
             </td>
             
           </tr>

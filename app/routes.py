@@ -3,7 +3,7 @@ import os
 from pydantic import BaseModel
 import simplejson as json
 from datetime import datetime, timedelta
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse, Response, JSONResponse
 from app.utils import read_file, CustomJSONEncoder, flatten_form_data, transactions_to_chartjs
 from fastapi import APIRouter, Request, UploadFile, Form
 from jinja2_fragments.fastapi import Jinja2Blocks
@@ -77,7 +77,7 @@ def index(ts_id: str, type: str, request: Request):
     labels, data = transactions_to_chartjs(transactions)
 
     return templates.TemplateResponse("tset/chart_raw.html", {
-        "request": request, "labels": labels, "data": data, "ts_id": ts_id
+        "request": request, "labels": labels, "data": data, "ts_id": ts_id, "type": type
     })
 
 
@@ -104,31 +104,29 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
   #  transactions_stats = db.get_transaction_sets_by_session(
   #      user_id=user_id, ts_id=ts_id)
 
-  # status_groups = db.get_transaction_set_by_status(
-  #     user_id=user_id, ts_id=ts_id)
+    status_groups = db.get_transaction_set_by_status(
+        user_id=user_id, ts_id=ts_id)
 
-    pendingItems = [item for item in transactions if item.status == 'pending']
+    pendingItems = [item for item in status_groups if item.status == 'pending']
     completedItems = [
-        item for item in transactions if item.status == 'pending']
+        item for item in status_groups if item.status == 'pending']
 
-    pendingCount = pendingItems[0].count if pendingItems else 0
-    completedItems = completedItems[0].count if completedItems else 0
+    pendingCount = pendingItems[0].count if pendingItems and len(
+        pendingItems) > 0 else 0
+    completedCount = completedItems[0].count if completedItems and len(
+        completedItems) > 0 else 0
+
+    if transactions:
+        min_date = min([transaction.date for transaction in transactions])
+        max_date = max([transaction.date for transaction in transactions])
+    else:
+        min_date = None
+        max_date = None
 
     print(
         f"present_transactions - returning saved transactions: {len(transactions)} for set {ts_id} (user_id={userId}, ts_id={ts_id}, page={1}, limit={10}, negative_only={False})")
 
-  # transaction_dicts = [ts.to_dict() for ts in transactions_stats]
-
-  # print("\n\n\n")
-  # print(f"{json.dumps(transaction_dicts, indent=4)}")
-  # print("\n\n\n")
-
-  # grandTotal = sum(ts['total']
-  #                  for ts in transaction_dicts if 'total' in ts)
-
-  # total_rows = sum(ts['count']
-  #                  for ts in transaction_dicts if 'count' in ts)
-    total_rows = len(transactions)
+    total_rows: int = pendingCount + completedCount
     urlGen = URLGenerator(
         base_url=f'/tset/{ ts_id }', expanded=expanded, page=page, limit=limit, start_date=start_date, end_date=end_date)
 
@@ -144,11 +142,14 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
                                        "message": message,
                                        "done": done,
                                        "pending_count": pendingCount,
-                                       "completed_count": completedItems,
+                                       "completed_count": completedCount,
+                                       "total_count": total_rows,
                                        "grand_total": 'na',
+                                       "min_date": min_date,
+                                       "max_date": max_date,
                                        "expanded": expanded,
                                        "bar_chart_url": urlGen.generate_chart_url(type="bar"),
-                                       "next_page": urlGen.generate_next(total_rows),
+                                       "next_page": urlGen.generate_next(total=total_rows),
                                        "prev_page": urlGen.generate_prev(),
                                        'header_form_url': urlGen.generate_headers_url(ts_id=ts_id),
                                        "debug": False
@@ -295,7 +296,7 @@ def index(ts_id: str, request: Request):
 def index(ts_id: str, t_id: str, request: Request):
     db = DataManager()
     res = db.reset_transaction(t_id=t_id)
-    return Response(status_code=200, content={"deleted": 1, "t_id": res}, media_type="application/json")
+    return JSONResponse(status_code=200, content={"deleted": 1, "t_id": t_id})
 
 
 @router.get("/tset/{ts_id}/upload")
@@ -358,7 +359,7 @@ def index(ts_id: str, request: Request):
     processed = 0
 
     for cat in response['categories']:
-        if len(cat) > 0:
+        if len(cat) > 0 and len(cat['category']):
             status = 'complete'
         else:
             status = 'pending'

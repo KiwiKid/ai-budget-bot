@@ -38,15 +38,23 @@ class URLGenerator:
     def generate_next(self, total) -> str:
         page = self.page + 1
 
-        if page * self.limit > total:
+        if (page * self.limit) > total:
             return ''
 
         return self.generate_url(page=page, limit=self.limit)
 
+    def generate_delete_transation(self, ts_id):
+        expanded_str = str(self.expanded).lower()
+        uuid_str = str(uuid.uuid4())
+        if ts_id:
+            return f"/tset/{ ts_id }/upload?expanded={expanded_str}"
+
+        return f"/tset/{uuid_str}/upload?expanded={expanded_str}"
+
     def generate_prev(self) -> str:
         page = self.page - 1
 
-        if (page < 0):
+        if (page < 1):
             return ''
         return self.generate_url(page=page, limit=self.limit)
 
