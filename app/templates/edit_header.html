@@ -2,35 +2,12 @@
 {% if config_open %}
   <div class="w-5/6">
 
-    <form
-    id="edit-start-form"
-    hx-put="/api/tset/{{ts_id}}/upload_start"
-    hx-headers='{"Content-Type": "application/json"}'
-    sse-swap="message.message"
-    hx-target="#edit-start-form-message"
+    <div
+    hx-get="/api/tset/{{ts_id}}/upload_start"
+    hx-target="this"
     hx-swap="outerHTML"
-  >
-    <div class="mb-4">
-      <div id="edit-start-form-message"></div>
-      
-      <label for="batch_name" class="block text-sm font-medium text-gray-200"
-        >Batch Name:</label
-      >
-      <input
-        type="text"
-        name="batch_name"
-        id="batch_name"
-        required
-        value="{{batch_name}}"
-        class="mt-1 p-2 border rounded-md text-black"
-      />
-      <input
-      type="submit"
-      value="Save"
-      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-    />
-    </div>
-  </form>
+    hx-trigger="load"
+  ></div>
 
   <form
     id="edit-form"

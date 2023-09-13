@@ -29,6 +29,9 @@ def transactions_to_chartjs(transactions):
 
 
 def pg_array_to_python_list(array_str: str) -> list:
+    if array_str == None:
+        return []
+
     items = array_str.split(",")
 
     cleaned_items = []

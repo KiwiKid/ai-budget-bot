@@ -604,8 +604,27 @@ async def update_headers(
         return present_headers(user_id=userId, request=request, ts_id=ts_id, message='error saving form')
 
 
+def present_header_start(user_id, request, ts_id, message):
+    db = DataManager()
+    headers = db.get_header(user_id=user_id, ts_id=ts_id)
+
+    if headers:
+        return templates.TemplateResponse("edit_header_start.html", {
+            "message": message,
+            'request': request,
+            'ts_id': headers.ts_id,
+            "batch_name": headers.batch_name
+        })
+    else:
+        return templates.TemplateResponse("edit_header_start.html", {
+            "message": message,
+            'request': request,
+            "ts_id": ts_id
+        })
+
+
 @router.put("/api/tset/{ts_id}/upload_start")
-async def index(ts_id: str, batch_name: str = Form(default='none')):
+async def index(ts_id: str, request: Request, batch_name: str = Form(default='none')):
 
     record = {
         "ts_id": ts_id,
@@ -616,9 +635,21 @@ async def index(ts_id: str, batch_name: str = Form(default='none')):
     saveHeader = db.upsert_header_name(record)
 
     if saveHeader:
-        return JSONResponse(content={"message": "✅ saved"}, status_code=200)
+        return present_header_start(ts_id=ts_id, user_id=userId, message=f"saved {batch_name}", request=request)
     else:
-        raise HTTPException(status_code=500, detail="Failed to save header.")
+        raise HTTPException(
+            status_code=500, detail="Failed to save header.", request=request)
+
+
+@router.get("/api/tset/{ts_id}/upload_start")
+async def index(ts_id: str, request: Request):
+    db = DataManager()
+    header = db.get_header(user_id=userId, ts_id=ts_id)
+
+    if header:
+        return present_header_start(ts_id=ts_id, user_id=userId, message='Edit', request=request)
+    else:
+        return present_header_start(ts_id=ts_id, user_id=userId, message='New', request=request)
 
 
 @router.post("/tset/{ts_id}/upload")
@@ -662,11 +693,12 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
         record = {
             "ts_id": ts_id,
             "user_id": userId,
+            "batch_name": existingHeaders.batch_name,
             "amount_head": headersRes.get("amount"),
             "date_head": headersRes.get("date"),
             "description_head": headersRes.get("description"),
-            'custom_rules': '',
-            'custom_categories': ''
+            'custom_rules': existingHeaders.custom_rules,
+            'custom_categories': existingHeaders.custom_categories
         }
         saveHeader = db.update_header(record)
         if saveHeader is None:

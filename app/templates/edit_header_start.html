@@ -1,0 +1,35 @@
+<form
+id="edit-start-form"
+hx-put="/api/tset/{{ts_id}}/upload_start"
+hx-headers='{"Content-Type": "application/json"}'
+hx-target="this"
+hx-swap="outerHTML"
+>
+<div class="mb-4">
+  <div class="flex items-center justify-center bg-gray-200">
+    <header class="text-center">
+      <h1 class="text-4xl font-bold text-gray-900">{{ batch_name }}r</h1>
+    </header>
+  </div>
+  
+  <h1></h1>
+  <div id="edit-start-form-message">{{message}}</div>
+  
+  <label for="batch_name" class="block text-sm font-medium text-gray-200"
+    >Batch Name:</label
+  >
+  <input
+    type="text"
+    name="batch_name"
+    id="batch_name"
+    required
+    value="{{batch_name}}"
+    class="mt-1 p-2 border rounded-md text-black"
+  />
+  <input
+  type="submit"
+  value="Save"
+  class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+/>
+</div>
+</form>

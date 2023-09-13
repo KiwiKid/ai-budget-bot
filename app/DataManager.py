@@ -185,18 +185,28 @@ class DataManager:
         except Exception as e:  # Catching a generic exception to log the actual error message
             raise ValueError(f"could not save record. Error: {e}")
 
-    def get_header(self, user_id, ts_id):
+    def get_header(self, user_id, ts_id) -> Header:
         """Returns headers filtered by a given userId."""
         print(f"get_header(user_id={user_id} ts_id={ts_id})")
         query = text(
-            'SELECT * FROM headers WHERE user_id = :user_id AND ts_id = :ts_id ORDER BY created_at DESC')
+            '''SELECT 
+                ts_id,
+                user_id,
+                amount_head,
+                date_head,
+                description_head,
+                created_at,
+                custom_rules,
+                custom_categories,
+                batch_name
+              FROM headers WHERE user_id = :user_id AND ts_id = :ts_id ORDER BY created_at DESC''')
         result = self.conn.execute(query, {'user_id': user_id, 'ts_id': ts_id})
 
         row = result.fetchone()
 
         if row:
             return Header(ts_id=row[0], user_id=row[1], amount_head=row[2], date_head=row[3], description_head=row[4],
-                          created_at=row[5], custom_rules=row[6], custom_categories=row[7])
+                          created_at=row[5], custom_rules=row[6], custom_categories=row[7], batch_name=row[8])
 
     def get_transactions(
         self, user_id: str, ts_id: str, page: int, limit: int, negative_only: bool = False, only_pending: bool = False, start_date: Optional[str] = None, end_date: Optional[str] = None
