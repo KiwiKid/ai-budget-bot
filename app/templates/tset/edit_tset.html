@@ -1,8 +1,11 @@
-{% extends "/shared/_base.html" %} {% block content %}
+{% extends "/shared/_base.html" %} 
+{% block content %}
+
 <div class="p-6" id="mainContent">
+
+{% include "/edit_header.html" %}
   <h1 class="text-2xl font-bold mb-4">Upload csv</h1>
   <sub>{{ ts_id }}</sub>
-
   <form
     hx-post="/tset/{{ts_id}}/upload"
     hx-target="this"

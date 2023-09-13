@@ -1,8 +1,39 @@
-<details id="edit-form" class="m-10">
-  <summary>EDIT CONFIG</summary>
+
+{% if config_open %}
   <div class="w-5/6">
+
+    <form
+    id="edit-start-form"
+    hx-put="/api/tset/{{ts_id}}/upload_start"
+    hx-headers='{"Content-Type": "application/json"}'
+    sse-swap="message.message"
+    hx-target="#edit-start-form-message"
+    hx-swap="outerHTML"
+  >
+    <div class="mb-4">
+      <div id="edit-start-form-message"></div>
+      
+      <label for="batch_name" class="block text-sm font-medium text-gray-200"
+        >Batch Name:</label
+      >
+      <input
+        type="text"
+        name="batch_name"
+        id="batch_name"
+        required
+        value="{{batch_name}}"
+        class="mt-1 p-2 border rounded-md text-black"
+      />
+      <input
+      type="submit"
+      value="Save"
+      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+    />
+    </div>
+  </form>
+
   <form
-    id="update-form"
+    id="edit-form"
     hx-put="/api/tset/{{ts_id}}/headers"
     hx-headers='{"Content-Type": "application/json"}'
     hx-target="#edit-form"
@@ -12,7 +43,10 @@
     <!-- hx-before-send="javascript:handleBeforeSend"-->
     <h2 class="text-2xl font-bold mb-4">{{ message }}</h2>
 
+    <details>
+      <summary>[extra config]</summary>
     <div class="mb-4">
+      
       <label for="amount" class="block text-sm font-medium text-gray-200"
         >Amount:</label
       >
@@ -90,6 +124,7 @@
         name="custom_categories_new"
         class="mt-1 p-2 border rounded-md text-black"
       />
+
     </div>
     <input
       type="submit"
@@ -110,4 +145,6 @@
     <div style="height: 300px"></div>
   </form>
   </div>
-</details>
+{% else %}
+  <div> {{header_form_url}}</div>HHHHHHHHHHH
+{% endif %}

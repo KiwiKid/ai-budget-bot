@@ -5,7 +5,7 @@ import simplejson as json
 from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse, Response, JSONResponse
 from app.utils import read_file, CustomJSONEncoder, flatten_form_data, transactions_to_chartjs
-from fastapi import APIRouter, Request, UploadFile, Form
+from fastapi import APIRouter, Request, UploadFile, Form, HTTPException
 from jinja2_fragments.fastapi import Jinja2Blocks
 from jinja2 import Environment, FileSystemLoader
 import pandas as pd
@@ -111,6 +111,8 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
     transactions = db.get_transactions(
         user_id=user_id, ts_id=ts_id, page=page, limit=limit, negative_only=False, start_date=start_date, end_date=end_date)
 
+    transaction_set_agg = db.get_transaction_set_aggregates(
+        user_id=user_id, ts_id=ts_id)[0]
   #  transactions_stats = db.get_transaction_sets_by_session(
   #      user_id=user_id, ts_id=ts_id)
 
@@ -132,10 +134,10 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
 
     print(f"{pendingCount}")
 
-    TODO: make this based on the ts_id dates (not this results sets dates)
+   #  TODO: make this based on the ts_id dates (not this results sets dates)
     if transactions:
-        min_date = min([transaction.date for transaction in transactions])
-        max_date = max([transaction.date for transaction in transactions])
+        min_date = transaction_set_agg.first_date
+        max_date = transaction_set_agg.last_date
         month_buttons = urlGen.generate_month_button_array(min_date, max_date)
     else:
         min_date = None
@@ -161,6 +163,7 @@ def present_transactions(user_id: str, request, ts_id: str, page: int, limit: in
                                        "completed_count": completedCount,
                                        "total_count": total_rows,
                                        "grand_total": 'na',
+                                       "transaction_set_agg": transaction_set_agg,
                                        "min_date": min_date,
                                        "max_date": max_date,
                                        "expanded": expanded,
@@ -272,8 +275,8 @@ def index(request: Request):
     else:
         template = "tset/tsets.html"
 
-    existingTransactionSet = db.get_transaction_sets_by_session(
-        userId)
+    existingTransactionSet = db.get_transaction_set_aggregates(
+        user_id=userId)
     return templates.TemplateResponse(template, {
         "request": request, "sets": existingTransactionSet, "excludeFrame": excludeFrame
     })
@@ -317,7 +320,7 @@ def index(ts_id: str, t_id: str, request: Request):
 
 @router.get("/tset/{ts_id}/upload")
 def index(ts_id: str, request: Request):
-    return templates.TemplateResponse("tset/edit_tset.html", {"request": request, "ts_id": ts_id})
+    return templates.TemplateResponse("tset/edit_tset.html", {"request": request, "ts_id": ts_id, "config_open": True})
 
 
 @router.get("/sidebar")
@@ -341,7 +344,7 @@ def index(request: Request):
 
 @router.post('/tset/{ts_id}/categorize')
 def index(ts_id: str, request: Request):
-    event_manager.notify('start', '')
+    event_manager.notify('start', 'Started')
     db = DataManager()
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
@@ -568,6 +571,7 @@ async def update_headers(
     # Extract the fields from form_data
     amount = form_data.get('amount')
     date = form_data.get('date')
+    batch_name = form_data.get('batch_name')
     custom_categories_new = form_data.get('custom_categories_new')
 
     description = flatten_form_data(form_data, 'description')
@@ -582,6 +586,7 @@ async def update_headers(
 
     record = {
         "ts_id": ts_id,
+        'batch_head': batch_name,
         "amount_head": amount,
         'user_id': userId,
         "date_head": date,
@@ -591,12 +596,29 @@ async def update_headers(
     }
 
     # Assuming db.save_header returns a response indicating success
-    res = db.save_header(record)
+    res = db.update_header(record)
 
     if res:
         return present_headers(user_id=userId, request=request, ts_id=ts_id, message='')
     else:
         return present_headers(user_id=userId, request=request, ts_id=ts_id, message='error saving form')
+
+
+@router.put("/api/tset/{ts_id}/upload_start")
+async def index(ts_id: str, batch_name: str = Form(default='none')):
+
+    record = {
+        "ts_id": ts_id,
+        "user_id": userId,
+        "batch_name": batch_name,
+    }
+    db = DataManager()
+    saveHeader = db.upsert_header_name(record)
+
+    if saveHeader:
+        return JSONResponse(content={"message": "✅ saved"}, status_code=200)
+    else:
+        raise HTTPException(status_code=500, detail="Failed to save header.")
 
 
 @router.post("/tset/{ts_id}/upload")
@@ -617,8 +639,8 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
     db = DataManager()
     existingHeaders = db.get_header(user_id=userId, ts_id=ts_id)
 
-    if not existingHeaders:
-        print(f"no existing headers, calling openai")
+    if not existingHeaders.amount_head:
+        print(f"no existing headers mappings, calling openai")
         isExisting = False
         csv = df.to_csv(index=False)
         first_10_lines = "\n".join(csv.split("\n")[:10])
@@ -646,7 +668,7 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
             'custom_rules': '',
             'custom_categories': ''
         }
-        saveHeader = db.save_header(record)
+        saveHeader = db.update_header(record)
         if saveHeader is None:
             print(f"Could not save header")
             raise Exception('Could not save header')
@@ -677,3 +699,8 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
 @router.get("/tset/{ts_id}/table")
 def index(request: Request):
     return templates.TemplateResponse("tset/tset.html", {"request": request})
+
+
+@router.get("/tset/{ts_id}/edit")
+def index(request: Request):
+    return templates.TemplateResponse("tset/edit_header.html", {"request": request})

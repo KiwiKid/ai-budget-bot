@@ -27,6 +27,7 @@ class TransactionSet(NamedTuple):
     ts_id: str
     count: int
     total: int
+    batch_name: str
     earliest_created_at: datetime
     first_date: datetime
     last_date: datetime
@@ -35,6 +36,7 @@ class TransactionSet(NamedTuple):
         """Converts the TransactionSet to a JSON serializable dictionary."""
         return {
             "ts_id": str(self.ts_id),
+            "batch_name": self.batch_name,
             "count": self.count,
             "total": self.total,
             "first_date": self.first_date.isoformat(),
@@ -50,17 +52,45 @@ class DataManager:
         self.engine = create_engine(db_string)
         self.conn = self.engine.connect()
 
+    def upsert_header_name(self, header):
+        """Upserts a header in the headers table based on ts_id."""
+        try:
+            print(f"upserting header\n {header}")
+            query = text('''
+                INSERT INTO headers (ts_id, user_id, batch_name) 
+                VALUES (:ts_id, :user_id, :batch_name)
+                ON CONFLICT (ts_id) DO UPDATE SET
+                    user_id = EXCLUDED.user_id,
+                    batch_name = EXCLUDED.batch_name
+            ''')
+            result = self.conn.execute(query,
+                                       {
+                                           'ts_id': header['ts_id'],
+                                           'user_id': header['user_id'],
+                                           'batch_name': header['batch_name']
+                                       }
+                                       )
+
+            self.conn.commit()
+            print(f"upserted header")
+            return result.rowcount
+
+        except Exception as e:
+            print(f"Error upsert_header: {e}")
+            return None
+
     def save_header(self, header):
         """Saves a header to the headers table."""
         try:
             print(f"saving headers\n {header}")
             query = text('''
-                INSERT INTO headers (ts_id, user_id, amount_head, date_head, description_head, custom_rules, custom_categories) 
+                INSERT INTO headers (ts_id, user_id, amount_head, batch_name, date_head, description_head, custom_rules, custom_categories) 
                 VALUES (:ts_id, :user_id, :amount_head, :date_head, :description_head, :custom_rules, :custom_categories)
             ''')
             result = self.conn.execute(query,
                                        {
                                            'ts_id': header['ts_id'],
+                                           'batch_name': header['batch_name'],
                                            'user_id': header['user_id'],
                                            'amount_head': header['amount_head'],
                                            'date_head': header['date_head'],
@@ -76,6 +106,43 @@ class DataManager:
 
         except Exception as e:
             print(f"Error save_header: {e}")
+            return None
+
+    def update_header(self, header):
+        """Updates a header in the headers table based on ts_id."""
+        try:
+            print(f"updating header\n {header}")
+            query = text('''
+                UPDATE headers 
+                SET 
+                    user_id = :user_id, 
+                    amount_head = :amount_head,
+                    batch_name = :batch_name,
+                    date_head = :date_head, 
+                    description_head = :description_head,
+                    custom_rules = :custom_rules,
+                    custom_categories = :custom_categories
+                WHERE ts_id = :ts_id
+            ''')
+            result = self.conn.execute(query,
+                                       {
+                                           'ts_id': header['ts_id'],
+                                           'batch_name': header['batch_name'],
+                                           'user_id': header['user_id'],
+                                           'amount_head': header['amount_head'],
+                                           'date_head': header['date_head'],
+                                           'description_head': header['description_head'],
+                                           'custom_rules': header['custom_rules'],
+                                           'custom_categories': header['custom_categories']
+                                       }
+                                       )
+
+            self.conn.commit()
+            print(f"updated header")
+            return result.rowcount
+
+        except Exception as e:
+            print(f"Error update_header: {e}")
             return None
 
     def save_transaction(self, t_id: str, ts_id: str, user_id: str, amount: str, date: str, description: str, status: str):
@@ -198,20 +265,21 @@ class DataManager:
 
         return res
 
-    def get_transaction_sets_by_session(self, user_id: int, ts_id: str = None) -> List[TransactionSet]:
+    def get_transaction_set_aggregates(self, user_id: int, ts_id: str = None) -> List[TransactionSet]:
         """Returns transactions filtered by a given user_id and optionally by ts_id."""
 
         query_str = '''
-            SELECT ts_id, COUNT(*), SUM(amount), MIN(created_at) AS earliest_created_at,  MIN(date) as first_date, MAX(date) AS last_date
-            FROM transactions 
-            WHERE user_id = :user_id
+            SELECT t.ts_id, COUNT(*), SUM(t.amount), MIN(h.batch_name), MIN(t.created_at) AS earliest_created_at,  MIN(t.date) as first_date, MAX(t.date) AS last_date
+            FROM transactions t
+            INNER JOIN headers h ON t.ts_id = h.ts_id
+            WHERE t.user_id = :user_id
         '''
 
         # Add ts_id filtering if provided
         if ts_id is not None:
-            query_str += ' AND ts_id = :ts_id'
+            query_str += ' AND t.ts_id = :ts_id'
 
-        query_str += ' GROUP BY ts_id'
+        query_str += ' GROUP BY t.ts_id'
 
         params = {'user_id': user_id}
         if ts_id:
@@ -221,7 +289,7 @@ class DataManager:
         result = self.conn.execute(query, params)
 
         # Convert the results to a list of TransactionSet
-        res = [TransactionSet(str(row[0]), row[1], row[2], row[3], row[4], row[5])
+        res = [TransactionSet(str(row[0]), row[1], row[2], row[3], row[4], row[5], row[6])
                for row in result.fetchall()]
 
         return res
