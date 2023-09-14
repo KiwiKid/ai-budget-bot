@@ -13,16 +13,18 @@ import io
 from app.open_ai_client import OpenAIClient
 from app.DataManager import DataManager
 from app.EventManager import EventManager
-from app.EventQueue import EventQueue
-
+from app.EventQueue import AsyncEventQueue
+from app.MQTTPublisher import MQTTPublisher
+from sse_starlette.sse import EventSourceResponse
 import uuid
-
-from typing import List, Optional
+import asyncio
+from typing import List, Optional, Callable, Dict, Any
 from app.config import Settings
 from app.URLGenerator import URLGenerator
 import signal
 import uuid
 from collections import defaultdict
+import sys
 
 templates = Jinja2Blocks(directory="app/templates")
 router = APIRouter()
@@ -43,23 +45,55 @@ class HeaderData(BaseModel):
 
 
 event_manager = EventManager()
-eq = EventQueue()
+eq = AsyncEventQueue()
+mqttPub = MQTTPublisher()
 
 
-def event_stream(eq: EventQueue):
-    event_manager.subscribe(eq.send)
-    try:
+class BroadcastChannel:
+    def __init__(self):
+        self.listeners = []
+
+    def add_listener(self, listener: Callable[[Dict[str, Any]], None]):
+        self.listeners.append(listener)
+
+    def remove_listener(self, listener: Callable[[Dict[str, Any]], None]):
+        self.listeners.remove(listener)
+
+    def broadcast(self, message: Dict[str, Any]):
+        print("broadcast")
+        for listener in list(self.listeners):
+            print("broadcast iteration")
+            listener(message)
+
+
+channel = BroadcastChannel()
+
+
+@router.get("/events")
+async def events(request: Request):
+    async def send_events():
+        queue = []
+        channel.add_listener(queue.append)
+
+   #     try:
         while True:
-            data = eq.receive()
-            yield f"data: event: {data['event']} - message: {data['message']}\n\n"
-            time.sleep(1)
-    finally:
-        event_manager.unsubscribe(eq.send)
+            if queue:
+                event = f"data: {queue.pop(0)}\n\n"
+                print("Sending event:", event)
+                yield event
+            else:
+                await asyncio.sleep(1)
+#    finally:
+   #        print(
+   #            f"channel.remove_listener channel.remove_listener channel.remove_listener: {sys.exc_info}")
+   #        channel.remove_listener(queue.append)
+
+    return StreamingResponse(send_events(), media_type="text/event-stream")
 
 
-@router.get("/updates")
-async def updates_endpoint(request: Request):
-    return StreamingResponse(event_stream(eq), media_type="text/event-stream")
+@router.get("/debug")
+async def index():
+    channel.broadcast('message: Woah')
 
 
 @router.get('/tset/{ts_id}/chart/{type}')
@@ -342,9 +376,34 @@ def index(request: Request):
                                                               })
 
 
+@router.post('/tset/{ts_id}/publish')
+async def index(ts_id: str, request: Request):
+    db = DataManager()
+    mqttPub = MQTTPublisher()
+    header = db.get_header(ts_id=ts_id, user_id=userId)
+    transactions = db.get_transactions(
+        user_id=userId, ts_id=ts_id, page=0, limit=99999, negative_only=False, only_pending=False)
+
+    if header.is_published:
+        for trans in transactions:
+            mqttPub.publish_transaction(account_id=header.batch_name, transaction_data={
+                "date": trans.date,
+                "description": trans.description,
+                "category": trans.category
+            })
+
+        await event_manager.notify(
+            'MQTT publish', f'Finished {len(transactions)} Published')
+        return JSONResponse(status_code=200, content={"ts_id": ts_id})
+    else:
+        await event_manager.notify(
+            'MQTT publish', f'batch {header.batch_name} is not set to publish')
+        return JSONResponse(status_code=200, content={"ts_id": ts_id})
+
+
 @router.post('/tset/{ts_id}/categorize')
-def index(ts_id: str, request: Request):
-    event_manager.notify('start', 'Started')
+async def index(ts_id: str, request: Request):
+    await event_manager.notify('start', 'Started')
     db = DataManager()
     page = int(request.query_params.get('page', 0))
     limit = int(request.query_params.get('limit', 50))
@@ -364,16 +423,16 @@ def index(ts_id: str, request: Request):
        # add_subscriber(preT[1], preT[0], {
        #     'event': 'start_category'
        # })
-    event_manager.notify(
+    await event_manager.notify(
         'start-set', f"{len(transactions)} rows processing")
     headers = db.get_header(user_id=userId, ts_id=ts_id)
 
     print(
-        f"categorize transactions {len(transactions)} with overrideCategories {headers.custom_categories} and rules: {headers.custom_rules}")
+        f"{headers.batch_name} categorize transactions {len(transactions)} with overrideCategories {headers.custom_categories} and rules: {headers.custom_rules}")
     response = aiClient.categorizeTransactions(
         transactions, overrideCategories=headers.custom_categories, custom_rules=headers.custom_rules)
     print(f"categorized transactions - Got: {len(response['categories'])}")
-    event_manager.notify(
+    await event_manager.notify(
         'categorized-set', f"categorized transactions - Got: {len(response['categories'])}")
     processed = 0
 
@@ -385,6 +444,7 @@ def index(ts_id: str, request: Request):
 
         db.set_transaction_category(
             t_id=cat['t_id'], category=cat['category'], status=status)
+
        # add_subscriber(ts_id, cat['t_id'], {
        #     'event': 'new_category',
        #     "data": {
@@ -572,6 +632,7 @@ async def update_headers(
     amount = form_data.get('amount')
     date = form_data.get('date')
     batch_name = form_data.get('batch_name')
+    is_published = form_data.get('is_published')
     custom_categories_new = form_data.get('custom_categories_new')
 
     description = flatten_form_data(form_data, 'description')
@@ -586,13 +647,14 @@ async def update_headers(
 
     record = {
         "ts_id": ts_id,
-        'batch_head': batch_name,
+        'batch_name': batch_name,
         "amount_head": amount,
         'user_id': userId,
         "date_head": date,
         "description_head": description,
         'custom_rules': custom_rules,
-        'custom_categories': categoriesToSave
+        'custom_categories': categoriesToSave,
+        'is_published': is_published
     }
 
     # Assuming db.save_header returns a response indicating success
@@ -695,6 +757,7 @@ async def index(ts_id: str, request: Request, bank_csv: UploadFile):
             "user_id": userId,
             "batch_name": existingHeaders.batch_name,
             "amount_head": headersRes.get("amount"),
+            "is_published": headersRes.get("is_published"),
             "date_head": headersRes.get("date"),
             "description_head": headersRes.get("description"),
             'custom_rules': existingHeaders.custom_rules,

@@ -1,16 +1,18 @@
-import queue
+import asyncio
 
 
-class EventQueue:
+class AsyncEventQueue:
     def __init__(self):
-        self.q = queue.Queue()
+        self.q = asyncio.Queue()
 
-    def send(self, data):
-        self.q.put(data)
+    async def hasEvent(self) -> bool:
+        return self.q.qsize() > 0
 
-    def receive(self):
-        return self.q.get()
+    async def send(self, data):
+        await self.q.put(data)
 
-    # This makes an instance of the class callable.
-    def __call__(self, data):
-        self.send(data)
+    async def receive(self):
+        return await self.q.get()
+
+    async def __call__(self, data):
+        await self.send(data)

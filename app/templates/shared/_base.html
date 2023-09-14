@@ -25,6 +25,32 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      const eventSource = new EventSource('/events');
+
+      eventSource.onopen = function(event) {
+          const message = document.getElementById('message')
+          if(message){
+            message.textContent = '✅';
+          }
+          console.log('🎃🎃🎃🎃Connection opened:', event);
+      };
+      
+      eventSource.onmessage = function(event) {
+          const message = document.getElementById('message')
+          if(message){
+            message.textContent = JSON.stringify(event.data);
+          }
+          console.log('🎃🎃🎃🎃Received data:', event.data);
+      };
+      
+      eventSource.onerror = function(event) {
+          console.error('🎃🎃🎃🎃Error occurred:', event);
+          if(message){
+            message.textContent = event;
+          }
+      };
+
+
       function formToJSON(form) {
         debugger;
         console.log("formToJSON");
@@ -111,8 +137,10 @@
                 </span>
 
             </a>
-            <div hx-ext="sse" sse-connect="/updates" sse-swap="message.message">
-            </div>
+            <div id="message"></div>
+            <!-- Try later: <div hx-ext="sse" sse-connect="/events" sse-swap="data">
+              mess
+            </div>-->
           </div>
           <div class="flex items-center">
             <div class="flex items-center ml-3">

@@ -39,4 +39,5 @@ ALTER TABLE headers ALTER COLUMN description_head DROP NOT NULL;
 ALTER TABLE headers 
 ADD PRIMARY KEY (ts_id);
 
-
+ALTER TABLE headers
+ADD column is_published boolean DEFAULT false;

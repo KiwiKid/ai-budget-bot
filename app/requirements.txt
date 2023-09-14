@@ -14,3 +14,6 @@ psycopg2
 python-dotenv
 python-dateutil
 beautifulsoup4
+paho-mqtt
+sse_starlette
+asyncio

@@ -23,6 +23,12 @@
     <details>
       <summary>[extra config]</summary>
     <div class="mb-4">
+
+      <input type="text" id="batch_name" name="{{batch_name}}" hidden>
+
+      <input type="checkbox" id="is_published" name="is_published">
+      <label for="is_published">MQTT Publish</label>
+
       
       <label for="amount" class="block text-sm font-medium text-gray-200"
         >Amount:</label
@@ -31,7 +37,6 @@
         type="text"
         name="amount"
         id="amount"
-        required
         value="{{amount_head}}"
         class="mt-1 p-2 border rounded-md text-black"
       />
@@ -45,7 +50,6 @@
         type="text"
         name="date"
         id="date"
-        required
         value="{{date_head}}"
         class="mt-1 p-2 border rounded-md text-black"
       />
@@ -123,5 +127,5 @@
   </form>
   </div>
 {% else %}
-  <div> {{header_form_url}}</div>HHHHHHHHHHH
+  <div> {{header_form_url}}</div> {{message}}
 {% endif %}
